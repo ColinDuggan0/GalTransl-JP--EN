@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { speakerStyle } from '../lib/speaker';
 import { resolveSpeakerName } from '../lib/useNameDict';
+import { toDisplayError } from '../lib/errors';
 import type {
   FileProgress,
   Job,
@@ -14,6 +15,7 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
   const [isMessageTruncated, setIsMessageTruncated] = useState(false);
   const messageRef = useRef<HTMLParagraphElement | null>(null);
   const messageText = (entry.message || '').trim();
+  const displayMessageText = messageText ? toDisplayError(messageText) : '';
   const kindLabel = getErrorKindLabel(entry.kind);
   const modelLabel = compactModelLabel(entry.model);
 
@@ -41,7 +43,7 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
     return () => {
       observer.disconnect();
     };
-  }, [messageText]);
+  }, [displayMessageText]);
 
   const handleCopyMessage = async () => {
     if (!messageText) return;
@@ -86,9 +88,9 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
       <p
         ref={messageRef}
         className="runtime-event__message"
-        title={isMessageTruncated && messageText ? messageText : undefined}
+        title={isMessageTruncated && displayMessageText ? displayMessageText : undefined}
       >
-        {entry.message || '未提供错误详情。'}
+        {displayMessageText || '未提供错误详情。'}
       </p>
       <dl className="runtime-event__meta">
         {entry.kind !== 'api' && (

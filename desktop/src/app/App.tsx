@@ -12,6 +12,7 @@ import {
 import { Sidebar } from '../components/Sidebar';
 import { ConnectionProvider } from '../features/connection/ConnectionContext';
 import { HomePage, addProjectToHistory } from '../pages/HomePage';
+import { t } from '../i18n';
 
 const ProjectLayout = lazy(async () => {
   const mod = await import('../components/ProjectLayout');
@@ -58,7 +59,7 @@ function saveConfigFileName(projectDir: string, configFileName: string) {
 }
 
 function RouteLoadingFallback() {
-  return <div className="inline-feedback">页面加载中…</div>;
+  return <div className="inline-feedback">{t('common.loadingPage')}</div>;
 }
 
 function loadOpenProjects(): string[] {

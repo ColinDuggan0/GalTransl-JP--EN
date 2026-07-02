@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { encodeProjectDir, decodeProjectDir, submitJob, fetchJob, fetchProjectRuntime, type ProjectRuntimeResponse } from '../lib/api';
 import { loadLastProjectTab } from '../lib/projectTabMemory';
 import { InlineFeedback } from './page-state/InlineFeedback';
+import { t, type TranslationKey } from '../i18n';
 import logoUrl from '../assets/logo.png';
 
 const CONFIG_FILE_KEY = 'galtransl-config-file';
@@ -28,12 +29,12 @@ function loadLastActiveProject(): string | null {
 }
 
 const PROJECT_TABS = [
-  { path: 'translate', label: '翻译工作台', icon: '🌐' },
-  { path: 'cache', label: '缓存与问题', icon: '💾' },
-  { path: 'dictionary', label: '项目字典', icon: '📖' },
-  { path: 'names', label: '人名翻译', icon: '👤' },
-  { path: 'config', label: '配置编辑', icon: '⚙️' },
-];
+  { path: 'translate', labelKey: 'nav.project.translate', icon: '🌐' },
+  { path: 'cache', labelKey: 'nav.project.cache', icon: '💾' },
+  { path: 'dictionary', labelKey: 'nav.project.dictionary', icon: '📖' },
+  { path: 'names', labelKey: 'nav.project.names', icon: '👤' },
+  { path: 'config', labelKey: 'nav.project.config', icon: '⚙️' },
+] satisfies { path: string; labelKey: TranslationKey; icon: string }[];
 
 type SidebarProps = {
   openProjects: string[];
@@ -367,14 +368,14 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
             const outputDir = `${normalizedDir}\\${OUTPUT_FOLDER_NAME}`;
             await invoke('open_folder', { path: outputDir });
           } else {
-            setRebuildToast(`输出文件重建失败: ${status.error || '未知错误'}`);
+            setRebuildToast(t('sidebar.rebuildFailed', { error: status.error || t('common.unknownError') }));
           }
           return;
         }
       }
-      setRebuildToast('输出文件重建超时');
+      setRebuildToast(t('sidebar.rebuildTimeout'));
     } catch (err) {
-      setRebuildToast(`输出文件重建出错: ${err instanceof Error ? err.message : String(err)}`);
+      setRebuildToast(t('sidebar.rebuildError', { error: err instanceof Error ? err.message : String(err) }));
     } finally {
       setRebuildingDirs((prev) => ({ ...prev, [projectDir]: false }));
     }
@@ -428,10 +429,10 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
           className={({ isActive }) =>
             `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
           }
-          title="首页"
+          title={t('nav.home')}
         >
           <span className="sidebar__nav-icon">🏠</span>
-          {expanded && <span className="sidebar__nav-label">首页</span>}
+          {expanded && <span className="sidebar__nav-label">{t('nav.home')}</span>}
         </NavLink>
       </div>
 
@@ -459,7 +460,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                       className={`sidebar__nav-icon sidebar__project-icon sidebar__project-icon--link${isProjectExpanded ? ' sidebar__project-icon--open' : ''}${compactProjectHeaders ? ' sidebar__project-icon--compact' : ''}`}
                       role="button"
                       tabIndex={0}
-                      title="打开项目文件夹"
+                      title={t('sidebar.openProjectFolder')}
                       onClick={(e) => { e.stopPropagation(); void invoke('open_folder', { path: projectDir }); }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); void invoke('open_folder', { path: projectDir }); } }}
                     >
@@ -470,7 +471,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                       className="sidebar__project-close"
                       type="button"
                       onClick={(e) => { e.stopPropagation(); handleRequestClose(projectDir); }}
-                      title="关闭项目"
+                      title={t('sidebar.closeProject')}
                     >
                       ✕
                     </button>
@@ -480,20 +481,20 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                         ref={confirmBubbleRef}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span className="sidebar__project-confirm-text">关闭?</span>
+                        <span className="sidebar__project-confirm-text">{t('sidebar.confirmClose')}</span>
                         <button
                           className="sidebar__project-confirm-yes"
                           type="button"
                           onClick={() => handleConfirmClose(projectDir)}
                         >
-                          确定
+                          {t('common.yes')}
                         </button>
                         <button
                           className="sidebar__project-confirm-no"
                           type="button"
                           onClick={handleCancelClose}
                         >
-                          取消
+                          {t('common.cancel')}
                         </button>
                       </div>
                     )}
@@ -513,7 +514,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                           }
                         >
                           <span className="sidebar__project-child-icon">{tab.icon}</span>
-                          <span className="sidebar__project-child-label">{tab.label}</span>
+                          <span className="sidebar__project-child-label">{t(tab.labelKey)}</span>
                         </NavLink>
                       ))}
                       <div className="sidebar__project-child-separator" />
@@ -521,11 +522,11 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                         to="."
                         onClick={(e) => { e.preventDefault(); if (!rebuildingDirs[projectDir] && !translatingDirs[projectDir]) void handleRebuildOutput(projectDir); }}
                         className={() => `sidebar__project-child sidebar__project-child--action${translatingDirs[projectDir] ? ' sidebar__project-child--disabled' : ''}`}
-                        title={translatingDirs[projectDir] ? '项目正在翻译中，无法构建输出' : '重建输出文件并打开文件夹'}
+                        title={translatingDirs[projectDir] ? t('sidebar.rebuildDisabledWhileTranslating') : t('sidebar.rebuildOutputTitle')}
                         style={(rebuildingDirs[projectDir] || translatingDirs[projectDir]) ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
                       >
                         <span className="sidebar__project-child-icon">{rebuildingDirs[projectDir] ? '⏳' : translatingDirs[projectDir] ? '🚫' : '📤'}</span>
-                        <span className="sidebar__project-child-label">构建输出</span>
+                        <span className="sidebar__project-child-label">{t('sidebar.rebuildOutput')}</span>
                       </NavLink>
                     </div>
                   )}
@@ -548,7 +549,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                       className={({ isActive }) =>
                         `sidebar__nav-item sidebar__nav-item--sub ${isActive ? 'sidebar__nav-item--active' : ''}`
                       }
-                      title={tab.label}
+                      title={t(tab.labelKey)}
                     >
                       <span className="sidebar__nav-icon">{tab.icon}</span>
                     </NavLink>
@@ -557,7 +558,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
                     to="."
                     onClick={(e) => { e.preventDefault(); if (!rebuildingDirs[projectDir] && !translatingDirs[projectDir]) void handleRebuildOutput(projectDir); }}
                     className={() => `sidebar__nav-item sidebar__nav-item--sub${translatingDirs[projectDir] ? ' sidebar__nav-item--disabled' : ''}`}
-                    title={translatingDirs[projectDir] ? '项目正在翻译中' : '构建输出'}
+                    title={translatingDirs[projectDir] ? t('sidebar.projectTranslating') : t('sidebar.rebuildOutput')}
                     style={(rebuildingDirs[projectDir] || translatingDirs[projectDir]) ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
                   >
                     <span className="sidebar__nav-icon">{rebuildingDirs[projectDir] ? '⏳' : translatingDirs[projectDir] ? '🚫' : '📤'}</span>
@@ -585,10 +586,10 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
           className={({ isActive }) =>
             `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
           }
-          title="翻译后端配置"
+          title={t('nav.backendProfiles')}
         >
           <span className="sidebar__nav-icon">🤖</span>
-          {expanded && <span className="sidebar__nav-label">翻译后端配置</span>}
+          {expanded && <span className="sidebar__nav-label">{t('nav.backendProfiles')}</span>}
         </NavLink>
 
         <NavLink
@@ -596,10 +597,10 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
           className={({ isActive }) =>
             `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
           }
-          title="通用字典管理"
+          title={t('nav.commonDictionaries')}
         >
           <span className="sidebar__nav-icon">📚</span>
-          {expanded && <span className="sidebar__nav-label">通用字典管理</span>}
+          {expanded && <span className="sidebar__nav-label">{t('nav.commonDictionaries')}</span>}
         </NavLink>
 
         <NavLink
@@ -607,10 +608,10 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
           className={({ isActive }) =>
             `sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`
           }
-          title="设置"
+          title={t('nav.settings')}
         >
           <span className="sidebar__nav-icon">⚙️</span>
-          {expanded && <span className="sidebar__nav-label">设置</span>}
+          {expanded && <span className="sidebar__nav-label">{t('nav.settings')}</span>}
         </NavLink>
       </nav>
 
@@ -619,12 +620,12 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
           className="sidebar__toggle-btn"
           type="button"
           onClick={toggleExpanded}
-          title={expanded ? '收起侧边栏' : '展开侧边栏'}
+          title={expanded ? t('sidebar.collapseSidebar') : t('sidebar.expandSidebar')}
         >
           <span className={`sidebar__toggle-icon ${expanded ? 'sidebar__toggle-icon--flip' : ''}`}>
             ▶
           </span>
-          {expanded && <span className="sidebar__toggle-label">收起</span>}
+          {expanded && <span className="sidebar__toggle-label">{t('sidebar.collapse')}</span>}
         </button>
       </div>
 
@@ -642,7 +643,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
               setContextMenu(null);
             }}
           >
-            关闭项目
+            {t('sidebar.closeProject')}
           </button>
           <button
             className="sidebar__context-menu-item"
@@ -653,7 +654,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
               setContextMenu(null);
             }}
           >
-            关闭其他项目
+            {t('sidebar.closeOtherProjects')}
           </button>
           <button
             className="sidebar__context-menu-item sidebar__context-menu-item--danger"
@@ -664,7 +665,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
               setContextMenu(null);
             }}
           >
-            关闭所有项目
+            {t('sidebar.closeAllProjects')}
           </button>
         </div>
       )}
@@ -673,7 +674,7 @@ export function Sidebar({ openProjects, onCloseProject, onCloseOtherProjects, on
         <div className="sidebar__toast-host" aria-live="assertive">
           <InlineFeedback
             tone="error"
-            title="构建输出失败"
+            title={t('sidebar.rebuildOutputFailedTitle')}
             description={rebuildToast}
             autoDismiss={2800}
             onDismiss={() => setRebuildToast(null)}

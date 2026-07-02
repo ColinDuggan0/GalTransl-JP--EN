@@ -12,6 +12,7 @@ import {
   getDefaultBackendProfile,
   setDefaultBackendProfile } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 
 type ProfileEntry = {
   name: string;
@@ -90,7 +91,7 @@ export function BackendProfilesPage() {
       );
       setProfiles(entries);
     } catch (err) {
-      setError(normalizeError(err, '加载后端配置失败'));
+      setError(normalizeError(err, t('backendProfiles.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -116,11 +117,11 @@ export function BackendProfilesPage() {
   const handleCreate = useCallback(async () => {
     const name = newProfileName.trim();
     if (!name) {
-      setError('配置名称不能为空');
+      setError(t('backendProfiles.errorNameRequired'));
       return;
     }
     if (profiles.some((p) => p.name === name)) {
-      setError(`配置「${name}」已存在`);
+      setError(t('backendProfiles.errorNameExists', { name }));
       return;
     }
     setCreating(true);
@@ -137,7 +138,7 @@ export function BackendProfilesPage() {
       setEditingConfig(newConfig);
       setIsEditing(true);
     } catch (err) {
-      setError(normalizeError(err, '创建配置失败'));
+      setError(normalizeError(err, t('backendProfiles.errorCreate')));
     } finally {
       setCreating(false);
     }
@@ -162,7 +163,7 @@ export function BackendProfilesPage() {
   const handleSave = useCallback(async () => {
     const name = editingName.trim();
     if (!name) {
-      setError('配置名称不能为空');
+      setError(t('backendProfiles.errorNameRequired'));
       return;
     }
     setSaving(true);
@@ -174,14 +175,14 @@ export function BackendProfilesPage() {
       setIsEditing(false);
       void loadProfiles();
     } catch (err) {
-      setError(normalizeError(err, '保存配置失败'));
+      setError(normalizeError(err, t('backendProfiles.errorSave')));
     } finally {
       setSaving(false);
     }
   }, [editingName, editingConfig, loadProfiles]);
 
   const handleDelete = useCallback(async (name: string) => {
-    if (!confirm(`确定要删除配置「${name}」吗？`)) return;
+    if (!confirm(t('backendProfiles.confirmDelete', { name }))) return;
     try {
       await deleteBackendProfile(name);
       // If we're editing this profile, close the editor
@@ -190,7 +191,7 @@ export function BackendProfilesPage() {
       }
       void loadProfiles();
     } catch (err) {
-      setError(normalizeError(err, '删除配置失败'));
+      setError(normalizeError(err, t('backendProfiles.errorDelete')));
     }
   }, [editingName, handleCancel, loadProfiles]);
 
@@ -198,12 +199,12 @@ export function BackendProfilesPage() {
     <div className="backend-profiles-page">
       <PageHeader
         className="backend-profiles-page__header"
-        title="🤖 翻译后端配置"
-        description="管理全局翻译后端配置，可在项目中直接选用，避免每个项目都重复配置。"
+        title={t('backendProfiles.title')}
+        description={t('backendProfiles.description')}
         status={
           <>
-            {error && <InlineFeedback tone="error" title="操作失败" description={error} />}
-            {saveSuccess && <InlineFeedback className="inline-alert--floating" tone="success" title="配置已保存" description="新的后端配置已写入，可在项目中直接选用。" onDismiss={() => setSaveSuccess(false)} />}
+            {error && <InlineFeedback tone="error" title={t('common.operationFailed')} description={error} />}
+            {saveSuccess && <InlineFeedback className="inline-alert--floating" tone="success" title={t('backendProfiles.savedTitle')} description={t('backendProfiles.savedDescription')} onDismiss={() => setSaveSuccess(false)} />}
           </>
         }
       />
@@ -211,20 +212,20 @@ export function BackendProfilesPage() {
       <div className="backend-profiles-page__content">
         <Panel
           className="backend-profiles-page__list-panel"
-          title="配置列表"
-          description="已创建的全局翻译后端配置。"
+          title={t('backendProfiles.listTitle')}
+          description={t('backendProfiles.listDescription')}
           actions={(
             <Button onClick={openNewDialog}>
-              + 新建配置
+              {t('backendProfiles.newConfig')}
             </Button>
           )}
         >
           {loading ? (
-            <LoadingState title="加载配置列表中…" description="正在读取全局翻译后端配置。" />
+            <LoadingState title={t('backendProfiles.loadingTitle')} description={t('backendProfiles.loadingDescription')} />
           ) : profiles.length === 0 ? (
             <EmptyState
-              title="暂无配置"
-              description="点击右上角「新建配置」按钮创建一个翻译后端配置。"
+              title={t('backendProfiles.emptyTitle')}
+              description={t('backendProfiles.emptyDescription')}
             />
           ) : (
             <div className="profile-list">
@@ -237,11 +238,11 @@ export function BackendProfilesPage() {
                       <div className="profile-card__name">
                         {entry.name}
                         {defaultProfile === entry.name && (
-                          <span className="profile-card__badge">默认</span>
+                          <span className="profile-card__badge">{t('backendProfiles.defaultBadge')}</span>
                         )}
                       </div>
-                      <div className="profile-card__meta">Base URL：{baseUrl}</div>
-                      <div className="profile-card__meta">模型：{modelName}</div>
+                      <div className="profile-card__meta">Base URL: {baseUrl}</div>
+                      <div className="profile-card__meta">{t('backendProfiles.model', { model: modelName })}</div>
                     </div>
                     <div className="profile-card__actions">
                       {defaultProfile !== entry.name ? (
@@ -252,7 +253,7 @@ export function BackendProfilesPage() {
                             setDefaultProfileState(entry.name);
                           }}
                         >
-                          设为默认
+                          {t('backendProfiles.setDefault')}
                         </Button>
                       ) : (
                         <Button
@@ -262,20 +263,20 @@ export function BackendProfilesPage() {
                             setDefaultProfileState('');
                           }}
                         >
-                          取消默认
+                          {t('backendProfiles.clearDefault')}
                         </Button>
                       )}
                       <Button
                         variant="secondary"
                         onClick={() => handleEdit(entry)}
                       >
-                        编辑
+                        {t('common.edit')}
                       </Button>
                       <Button
                         variant="secondary"
                         onClick={() => void handleDelete(entry.name)}
                       >
-                        删除
+                        {t('common.delete')}
                       </Button>
                     </div>
                   </div>
@@ -303,10 +304,10 @@ export function BackendProfilesPage() {
                 id="edit-profile-dialog-title"
                 className="backend-profiles-page__dialog-title"
               >
-                编辑配置 - {editingName}
+                {t('backendProfiles.editTitle', { name: editingName })}
               </h3>
               <p className="backend-profiles-page__dialog-subtitle">
-                配置翻译后端参数，与项目配置中的翻译后端设置一致。
+                {t('backendProfiles.editDescription')}
               </p>
             </header>
 
@@ -330,13 +331,13 @@ export function BackendProfilesPage() {
 
             <div className="form-actions">
               <Button variant="secondary" onClick={handleCancel} disabled={saving}>
-                取消
+                {t('common.cancel')}
               </Button>
               <Button
                 onClick={() => void handleSave()}
                 disabled={saving || !editingName.trim()}
               >
-                {saving ? '保存中…' : '保存配置'}
+                {saving ? t('common.saving') : t('common.saveConfig')}
               </Button>
             </div>
           </div>
@@ -359,10 +360,10 @@ export function BackendProfilesPage() {
               id="new-profile-dialog-title"
               className="backend-profiles-page__dialog-title"
             >
-              新建后端配置
+              {t('backendProfiles.newTitle')}
             </h3>
             <label className="field">
-              <span>配置名称</span>
+              <span>{t('backendProfiles.nameLabel')}</span>
               <input
                 type="text"
                 value={newProfileName}
@@ -371,11 +372,11 @@ export function BackendProfilesPage() {
                   if (e.key === 'Enter') { e.preventDefault(); void handleCreate(); }
                   else if (e.key === 'Escape') { e.preventDefault(); closeNewDialog(); }
                 }}
-                placeholder="例如：gpt5"
+                placeholder={t('backendProfiles.namePlaceholder')}
                 autoFocus
                 disabled={creating}
               />
-              <span className="field__hint">配置名称创建后不可修改，可在列表中点击「编辑」填写具体参数。</span>
+              <span className="field__hint">{t('backendProfiles.nameHint')}</span>
             </label>
             {error && <InlineFeedback tone="error" description={error} />}
             <div className="form-actions">
@@ -383,10 +384,10 @@ export function BackendProfilesPage() {
                 onClick={() => void handleCreate()}
                 disabled={creating || !newProfileName.trim()}
               >
-                {creating ? '创建中…' : '创建'}
+                {creating ? t('common.creating') : t('common.create')}
               </Button>
               <Button variant="secondary" onClick={closeNewDialog} disabled={creating}>
-                取消
+                {t('common.cancel')}
               </Button>
             </div>
           </div>

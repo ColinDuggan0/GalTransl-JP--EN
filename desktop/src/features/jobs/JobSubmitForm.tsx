@@ -4,6 +4,7 @@ import { CustomSelect } from '../../components/CustomSelect';
 import { Panel } from '../../components/Panel';
 import { InlineFeedback } from '../../components/page-state/InlineFeedback';
 import type { SubmitJobPayload, TranslatorOption } from '../../lib/api';
+import { toDisplayError } from '../../lib/errors';
 
 type JobSubmitFormProps = {
   disabled: boolean;
@@ -19,6 +20,7 @@ export function JobSubmitForm({ disabled, isSubmitting, onSubmit, submitError, t
   const [translator, setTranslator] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const activeError = localError ?? submitError;
+  const displayActiveError = activeError ? toDisplayError(activeError) : null;
 
   useEffect(() => {
     if (!translator && translators.length > 0) {
@@ -94,8 +96,8 @@ export function JobSubmitForm({ disabled, isSubmitting, onSubmit, submitError, t
           </CustomSelect>
         </label>
 
-        {activeError ? (
-          <InlineFeedback tone="error" title="启动任务失败" description={activeError} />
+        {displayActiveError ? (
+          <InlineFeedback tone="error" title="启动任务失败" description={displayActiveError} />
         ) : (
           <InlineFeedback tone="info" title="连接提示">
             后端默认地址来自 <code>VITE_BACKEND_URL</code>，未设置时回退到{' '}

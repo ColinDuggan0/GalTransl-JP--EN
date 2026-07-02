@@ -18,7 +18,8 @@ import {
   type Job,
 } from '../lib/api';
 import { formatTimestamp } from '../lib/format';
-import { normalizeError } from '../lib/errors';
+import { normalizeError, toDisplayError } from '../lib/errors';
+import { getLocale, t } from '../i18n';
 const HISTORY_KEY = 'galtransl-project-history';
 const JOB_MEMORY_KEY = 'galtransl-home-jobs-memory';
 const JOB_CLEARED_KEY = 'galtransl-home-jobs-cleared';
@@ -349,7 +350,7 @@ export function HomePage({ onOpenProject }: HomePageProps) {
         );
       }
     } catch (error) {
-      setJobsError(normalizeError(error, '读取全局任务列表失败'));
+      setJobsError(normalizeError(error, t('home.errorFetchJobs')));
     } finally {
       if (!silent) {
         const elapsedMs = Date.now() - startedAt;
@@ -383,8 +384,8 @@ export function HomePage({ onOpenProject }: HomePageProps) {
     const selected = await open({
       multiple: false,
       filters: [
-        { name: '配置文件', extensions: ['yaml', 'yml', 'inc.yaml', 'inc.yml'] },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('home.dialogConfigFiles'), extensions: ['yaml', 'yml', 'inc.yaml', 'inc.yml'] },
+        { name: t('home.dialogAllFiles'), extensions: ['*'] },
       ],
     });
     if (!selected) return;
@@ -440,7 +441,7 @@ export function HomePage({ onOpenProject }: HomePageProps) {
       );
       await refreshJobs(true);
     } catch (error) {
-      setJobsError(normalizeError(error, '停止任务失败'));
+      setJobsError(normalizeError(error, t('home.errorStopJob')));
       void refreshJobs(true);
     } finally {
       setStoppingJobId(null);
@@ -484,12 +485,12 @@ export function HomePage({ onOpenProject }: HomePageProps) {
       <div className="home-hero">
         <div className="home-hero__brand">
           <div className="home-hero__text">
-            <span className="home-hero__eyebrow">Desktop Translation Console</span>
+            <span className="home-hero__eyebrow">{t('home.heroEyebrow')}</span>
             <h1 className="home-hero__title">GalTransl</h1>
-            <p className="home-hero__subtitle">Translate your favorite Galgame</p>
-            <p className="home-hero__description">基于AI大模型的galgame自动化翻译解决方案</p>
-            <div className="home-hero__chips" aria-label="首页信息">
-              <span className="home-hero__chip">版本 {coreVersion ? `v${coreVersion}` : '—'}</span>
+            <p className="home-hero__subtitle">{t('home.heroSubtitle')}</p>
+            <p className="home-hero__description">{t('home.heroDescription')}</p>
+            <div className="home-hero__chips" aria-label={t('home.infoAria')}>
+              <span className="home-hero__chip">{t('home.version', { version: coreVersion ? `v${coreVersion}` : '—' })}</span>
               {updateAvailable && latestVersion ? (
                 <a
                   className="home-hero__chip home-hero__chip--update"
@@ -497,11 +498,11 @@ export function HomePage({ onOpenProject }: HomePageProps) {
                   target="_blank"
                   rel="noreferrer noopener"
                 >
-                  发现新版本 v{latestVersion}
+                  {t('home.updateAvailable', { version: latestVersion })}
                 </a>
               ) : null}
               <a className="home-hero__chip home-hero__chip--link" href={PROJECT_HOMEPAGE} target="_blank" rel="noreferrer noopener">
-                项目主页
+                {t('home.projectHomepage')}
               </a>
             </div>
           </div>
@@ -510,24 +511,24 @@ export function HomePage({ onOpenProject }: HomePageProps) {
         <div className="home-hero__stats">
           <div className="home-hero__stat">
             <span className="home-hero__stat-value">{history.length}</span>
-            <span className="home-hero__stat-label">历史项目</span>
+            <span className="home-hero__stat-label">{t('home.historyProjects')}</span>
           </div>
           <div className="home-hero__stat-divider" />
           <div className="home-hero__stat">
             <span className="home-hero__stat-value home-hero__stat-value--active">{activeJobsCount}</span>
-            <span className="home-hero__stat-label">活跃任务</span>
+            <span className="home-hero__stat-label">{t('home.activeJobs')}</span>
           </div>
           <div className="home-hero__stat-divider" />
           <div className="home-hero__stat">
             <span className="home-hero__stat-value">{completedJobsCount}</span>
-            <span className="home-hero__stat-label">已完成</span>
+            <span className="home-hero__stat-label">{t('home.completed')}</span>
           </div>
           <div className="home-hero__stat-divider" />
           <div className="home-hero__stat">
             <span className={`home-hero__stat-value${failedJobsCount > 0 ? ' home-hero__stat-value--danger' : ''}`}>
               {failedJobsCount}
             </span>
-            <span className="home-hero__stat-label">失败</span>
+            <span className="home-hero__stat-label">{t('home.failed')}</span>
           </div>
         </div>
 
@@ -540,16 +541,16 @@ export function HomePage({ onOpenProject }: HomePageProps) {
         {/* Left: Open Project */}
         <section className="home-open">
           <div className="home-open__header">
-            <h2>打开项目</h2>
-            <p>打开或新建翻译项目</p>
+            <h2>{t('home.openProjectTitle')}</h2>
+            <p>{t('home.openProjectDescription')}</p>
           </div>
           <div className="home-open__form">
             <div className="home-open__actions">
               <Button type="button" className="home-open__action-btn" onClick={() => void handleOpenProject()}>
-                打开项目
+                {t('home.openProjectButton')}
               </Button>
               <Button type="button" className="home-open__action-btn" variant="secondary" onClick={() => navigate('/new-project')}>
-                新建项目
+                {t('home.newProjectButton')}
               </Button>
             </div>
           </div>
@@ -559,15 +560,15 @@ export function HomePage({ onOpenProject }: HomePageProps) {
         <section className="home-history">
           <div className="home-history__header">
             <div>
-              <h2>历史项目</h2>
-              <p>最近打开的项目</p>
+              <h2>{t('home.historyTitle')}</h2>
+              <p>{t('home.historyDescription')}</p>
             </div>
             <span className="home-history__count">{history.length}</span>
           </div>
           {history.length === 0 ? (
             <div className="home-history__empty">
-              <span>暂无历史</span>
-              <span>打开项目后自动出现在这里</span>
+              <span>{t('home.emptyHistoryTitle')}</span>
+              <span>{t('home.emptyHistoryDescription')}</span>
             </div>
           ) : (
             <div className="home-history__list">
@@ -599,7 +600,7 @@ export function HomePage({ onOpenProject }: HomePageProps) {
                     type="button"
                     className="home-history__item-remove"
                     onClick={(e) => handleRemoveHistory(entry.projectDir, e)}
-                    title="从历史中移除"
+                    title={t('home.removeFromHistory')}
                   >
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
                       <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -615,27 +616,27 @@ export function HomePage({ onOpenProject }: HomePageProps) {
         <section className="home-jobs">
           <div className="home-jobs__header">
             <div>
-              <h2>翻译任务</h2>
-              <p>进度与状态汇总</p>
+              <h2>{t('home.jobsTitle')}</h2>
+              <p>{t('home.jobsDescription')}</p>
             </div>
             <button
               type="button"
               className="icon-btn icon-btn--clear"
               disabled={jobs.every((job) => job.status === 'running' || job.status === 'pending')}
               onClick={handleClearFinishedJobs}
-              title="清空已完成/失败的任务"
-              aria-label="清空已完成/失败的任务"
+              title={t('home.clearFinishedJobs')}
+              aria-label={t('home.clearFinishedJobs')}
             >
               <svg viewBox="0 0 16 16" width="15" height="15" fill="none">
                 <path d="M2 4h12M5 4V2.5a.5.5 0 01.5-.5h5a.5.5 0 01.5.5V4M6 7v5M10 7v5M3 4l.8 9.1A1 1 0 004.8 14h6.4a1 1 0 001-.9L13 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
-          {jobsError ? <InlineFeedback tone="error" title="加载失败" description={jobsError} /> : null}
+          {jobsError ? <InlineFeedback tone="error" title={t('common.loadFailed')} description={jobsError} /> : null}
           {jobs.length === 0 ? (
             <div className="home-jobs__empty">
-              <span>还没有翻译任务</span>
-              <span>启动翻译后，任务会汇总在这里</span>
+              <span>{t('home.emptyJobsTitle')}</span>
+              <span>{t('home.emptyJobsDescription')}</span>
             </div>
           ) : (
             <div className="home-jobs__list">
@@ -643,6 +644,7 @@ export function HomePage({ onOpenProject }: HomePageProps) {
                 const prog = jobProgressById[job.job_id];
                 const isRunningJob = job.status === 'running';
                 const isStoppingThisJob = stoppingJobId === job.job_id;
+                const displayJobError = job.error ? toDisplayError(job.error) : '';
                 return (
                   <div
                     key={job.job_id}
@@ -671,10 +673,10 @@ export function HomePage({ onOpenProject }: HomePageProps) {
                               className={`home-job-row__stop-btn${isStoppingThisJob ? ' is-stopping' : ''}`}
                               onClick={(event) => void handleStopJob(job, event)}
                               disabled={Boolean(stoppingJobId) && !isStoppingThisJob}
-                              aria-label={isStoppingThisJob ? '正在停止任务' : `停止任务 ${projectName(job.project_dir)}`}
-                              title={isStoppingThisJob ? '正在停止任务' : '停止任务'}
+                              aria-label={isStoppingThisJob ? t('home.stoppingJob') : t('home.stopJobForProject', { project: projectName(job.project_dir) })}
+                              title={isStoppingThisJob ? t('home.stoppingJob') : t('home.stopJob')}
                             >
-                              {isStoppingThisJob ? '停止中…' : '停止'}
+                              {isStoppingThisJob ? t('home.stopping') : t('home.stop')}
                             </button>
                           </div>
                         ) : (
@@ -700,9 +702,9 @@ export function HomePage({ onOpenProject }: HomePageProps) {
                         <div className="home-job-row__bar-fill" style={{ width: `${prog.percent}%` }} />
                       </div>
                     ) : null}
-                    {job.error ? (
-                      <div className="home-job-row__error" title={job.error}>
-                        {job.error.length > 80 ? `${job.error.slice(0, 80)}…` : job.error}
+                    {displayJobError ? (
+                      <div className="home-job-row__error" title={displayJobError}>
+                        {displayJobError.length > 80 ? `${displayJobError.slice(0, 80)}…` : displayJobError}
                       </div>
                     ) : null}
                   </div>
@@ -723,7 +725,7 @@ function projectName(projectDir: string): string {
 function formatDate(isoString: string): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(getLocale(), {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

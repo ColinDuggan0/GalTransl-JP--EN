@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { CustomSelect } from './CustomSelect';
+import { t } from '../i18n';
 
 type ProxyEntry = {
   address: string;
@@ -41,55 +42,55 @@ export function ProxyConfigEditor({ proxyConfig, onChange, readOnly = false }: P
 
   return (
     <>
-      <h3 className="config-section-title" style={{ marginTop: '24px' }}>代理设置</h3>
+      <h3 className="config-section-title" style={{ marginTop: '24px' }}>{t('proxy.title')}</h3>
 
       <label className="field">
-        <span>启用代理</span>
+        <span>{t('proxy.enable')}</span>
         <CustomSelect
           disabled={readOnly}
           value={String(enableProxy)}
           onChange={(e) => toggleEnableProxy(e.target.value === 'true')}
         >
-          <option value="true">是</option>
-          <option value="false">否</option>
+          <option value="true">{t('common.yes')}</option>
+          <option value="false">{t('common.no')}</option>
         </CustomSelect>
-        <span className="field__hint">使用中转供应商时一般不用开代理</span>
+        <span className="field__hint">{t('proxy.hint')}</span>
       </label>
 
       {enableProxy && (
         <div className="token-list">
           <div className="token-list__header">
-            <span className="token-list__title">代理列表</span>
+            <span className="token-list__title">{t('proxy.list')}</span>
             {!readOnly && (
               <button type="button" className="token-list__add-btn" onClick={addProxy}>
-                + 添加代理
+                {t('proxy.add')}
               </button>
             )}
           </div>
 
           {proxies.length === 0 && (
             <div className="token-list__empty">
-              暂无代理，请点击「添加代理」按钮添加。
+              {t('proxy.empty')}
             </div>
           )}
 
           {proxies.map((p, idx) => (
             <div key={idx} className="token-entry">
               <div className="token-entry__header">
-                <span className="token-entry__index">代理 #{idx + 1}</span>
+                <span className="token-entry__index">{t('proxy.index', { index: idx + 1 })}</span>
                 {!readOnly && (
                   <button
                     type="button"
                     className="token-entry__remove-btn"
                     onClick={() => removeProxy(idx)}
-                    title="删除此代理"
+                    title={t('proxy.delete')}
                   >
                     ✕
                   </button>
                 )}
               </div>
               <label className="field field--inline">
-                <span>代理地址</span>
+                <span>{t('proxy.address')}</span>
                 <input
                   type="text"
                   disabled={readOnly}
@@ -99,23 +100,23 @@ export function ProxyConfigEditor({ proxyConfig, onChange, readOnly = false }: P
                 />
               </label>
               <label className="field field--inline">
-                <span>用户名</span>
+                <span>{t('proxy.username')}</span>
                 <input
                   type="text"
                   disabled={readOnly}
                   value={p.username ?? ''}
                   onChange={(e) => updateProxy(idx, 'username', e.target.value)}
-                  placeholder="可选"
+                  placeholder={t('proxy.optional')}
                 />
               </label>
               <label className="field field--inline">
-                <span>密码</span>
+                <span>{t('proxy.password')}</span>
                 <input
                   type="password"
                   disabled={readOnly}
                   value={p.password ?? ''}
                   onChange={(e) => updateProxy(idx, 'password', e.target.value)}
-                  placeholder="可选"
+                  placeholder={t('proxy.optional')}
                 />
               </label>
             </div>

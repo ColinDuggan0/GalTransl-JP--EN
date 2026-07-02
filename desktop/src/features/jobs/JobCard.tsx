@@ -1,5 +1,6 @@
 import { StatusBadge } from '../../components/StatusBadge';
 import type { Job } from '../../lib/api';
+import { toDisplayError } from '../../lib/errors';
 import { formatJobResult, formatTimestamp } from '../../lib/format';
 
 type JobCardProgress = {
@@ -15,6 +16,8 @@ type JobCardProps = {
 };
 
 export function JobCard({ job, progress }: JobCardProps) {
+  const displayJobError = job.error ? toDisplayError(job.error) : '';
+
   return (
     <article className="job-card">
       <div className="job-card__header">
@@ -68,10 +71,10 @@ export function JobCard({ job, progress }: JobCardProps) {
         </div>
       ) : null}
 
-      {job.error ? (
+      {displayJobError ? (
         <div className="job-card__error" role="alert">
           <strong>Execution error</strong>
-          <pre>{job.error}</pre>
+          <pre>{displayJobError}</pre>
         </div>
       ) : null}
     </article>

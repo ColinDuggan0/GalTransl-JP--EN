@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CustomSelect } from './CustomSelect';
 import { fetchOpenAIModels } from '../lib/api';
+import { t } from '../i18n';
 
 type TokenEntry = {
   token: string;
@@ -152,7 +153,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
         setOpenDropdownIdx(index);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '请求失败';
+      const msg = err instanceof Error ? err.message : t('backendConfig.fetchModelsRequestFailed');
       setModelsState((prev) => ({
         ...prev,
         [index]: { loading: false, error: msg, models: prev[index]?.models ?? [] },
@@ -164,7 +165,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
     <>
       {/* Backend type selector */}
       <label className="field">
-        <span>后端类型</span>
+        <span>{t('backendConfig.backendType')}</span>
         <div className="backend-type-toggle">
           <label className="toggle-checkbox">
             <input
@@ -173,7 +174,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
               checked={hasOai}
               onChange={(e) => toggleBackendType('OpenAI-Compatible', e.target.checked)}
             />
-            <span>OpenAI 兼容接口</span>
+            <span>{t('backendConfig.openAiCompatible')}</span>
           </label>
           <label className="toggle-checkbox">
             <input
@@ -182,7 +183,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
               checked={hasSakura}
               onChange={(e) => toggleBackendType('SakuraLLM', e.target.checked)}
             />
-            <span>Sakura 本地模型</span>
+            <span>{t('backendConfig.sakuraLocal')}</span>
           </label>
         </div>
       </label>
@@ -190,37 +191,37 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
       {/* OpenAI-Compatible section */}
       {hasOai && (
         <>
-          <h3 className="config-section-title">OpenAI 兼容接口</h3>
+          <h3 className="config-section-title">{t('backendConfig.openAiCompatible')}</h3>
 
           {/* Tokens list */}
           <div className="token-list">
             <div className="token-list__header">
-              <span className="token-list__title">API 令牌列表</span>
+              <span className="token-list__title">{t('backendConfig.apiTokenList')}</span>
               {!readOnly && (
                 <button type="button" className="token-list__add-btn" onClick={addToken}>
-                  + 添加令牌
+                  {t('backendConfig.addToken')}
                 </button>
               )}
             </div>
 
             {tokens.length === 0 && (
               <div className="token-list__empty">
-                暂无令牌，请点击「添加令牌」按钮添加。
+                {t('backendConfig.emptyTokens')}
               </div>
             )}
 
-            {tokens.map((t, idx) => {
+            {tokens.map((token, idx) => {
               const ms = modelsState[idx];
               return (
               <div key={idx} className="token-entry">
                 <div className="token-entry__header">
-                  <span className="token-entry__index">令牌 #{idx + 1}</span>
+                  <span className="token-entry__index">{t('backendConfig.tokenIndex', { index: idx + 1 })}</span>
                   {!readOnly && (
                     <button
                       type="button"
                       className="token-entry__remove-btn"
                       onClick={() => removeToken(idx)}
-                      title="删除此令牌"
+                      title={t('backendConfig.deleteToken')}
                     >
                       ✕
                     </button>
@@ -231,7 +232,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                   <input
                     type="text"
                     disabled={readOnly}
-                    value={t.token ?? ''}
+                    value={token.token ?? ''}
                     onChange={(e) => updateToken(idx, 'token', e.target.value)}
                     placeholder="sk-..."
                   />
@@ -241,13 +242,13 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                   <input
                     type="text"
                     disabled={readOnly}
-                    value={t.endpoint ?? ''}
+                    value={token.endpoint ?? ''}
                     onChange={(e) => updateToken(idx, 'endpoint', e.target.value)}
                     placeholder="http://127.0.0.1:8080"
                   />
                 </label>
                 <label className="field field--inline">
-                  <span>模型名称</span>
+                  <span>{t('backendConfig.modelName')}</span>
                   <div className="model-name-row">
                     <div
                       className={`model-name-combo${openDropdownIdx === idx ? ' model-name-combo--open' : ''}`}
@@ -256,7 +257,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                       <input
                         type="text"
                         disabled={readOnly}
-                        value={t.modelName ?? ''}
+                        value={token.modelName ?? ''}
                         onChange={(e) => updateToken(idx, 'modelName', e.target.value)}
                         placeholder="gpt-4o-mini"
                         className="model-name-combo__input"
@@ -269,7 +270,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                           type="button"
                           className="model-name-combo__arrow"
                           onClick={() => setOpenDropdownIdx((cur) => (cur === idx ? null : idx))}
-                          aria-label="展开模型列表"
+                          aria-label={t('backendConfig.expandModelList')}
                           aria-expanded={openDropdownIdx === idx}
                           tabIndex={-1}
                         >
@@ -284,8 +285,8 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                             <div
                               key={m}
                               role="option"
-                              aria-selected={t.modelName === m}
-                              className={`custom-select__option${t.modelName === m ? ' custom-select__option--selected' : ''}`}
+                              aria-selected={token.modelName === m}
+                              className={`custom-select__option${token.modelName === m ? ' custom-select__option--selected' : ''}`}
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -305,36 +306,36 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
                         className="model-name-row__fetch-btn"
                         onClick={() => handleFetchModels(idx)}
                         disabled={modelsState[idx]?.loading}
-                        title="通过当前 API Key 和 Base URL 获取模型列表"
+                        title={t('backendConfig.fetchModelsTitle')}
                       >
-                        {modelsState[idx]?.loading ? '获取中…' : '拉取模型列表'}
+                        {modelsState[idx]?.loading ? t('backendConfig.fetchingModels') : t('backendConfig.fetchModels')}
                       </button>
                     )}
                   </div>
                   {ms?.error && (
                     <span className="field__hint field__hint--error">
-                      获取失败：{ms.error}
+                      {t('backendConfig.fetchModelsFailed', { error: ms.error })}
                     </span>
                   )}
                   {ms && !ms.error && ms.models.length > 0 && (
                     <span className="field__hint">
-                      已获取 {ms.models.length} 个模型，点击输入框右侧箭头可展开选择
+                      {t('backendConfig.modelsFetched', { count: ms.models.length })}
                     </span>
                   )}
                 </label>
                 <label className="field field--inline">
-                  <span>流式请求</span>
+                  <span>{t('backendConfig.streamRequest')}</span>
                   <CustomSelect
                     disabled={readOnly}
-                    value={t.stream == null ? '' : String(t.stream)}
+                    value={token.stream == null ? '' : String(token.stream)}
                     onChange={(e) => {
                       if (e.target.value === '') updateToken(idx, 'stream', undefined as unknown as boolean);
                       else updateToken(idx, 'stream', e.target.value === 'true');
                     }}
                   >
-                    <option value="">默认</option>
-                    <option value="true">是</option>
-                    <option value="false">否</option>
+                    <option value="">{t('common.default')}</option>
+                    <option value="true">{t('common.yes')}</option>
+                    <option value="false">{t('common.no')}</option>
                   </CustomSelect>
                 </label>
               </div>
@@ -343,30 +344,30 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
           </div>
 
           <label className="field">
-            <span>令牌策略</span>
+            <span>{t('backendConfig.tokenStrategy')}</span>
             <CustomSelect
               disabled={readOnly}
               value={String(oaiConfig.tokenStrategy ?? 'random')}
               onChange={(e) => updateOai('tokenStrategy', e.target.value)}
             >
-              <option value="random">随机轮询</option>
-              <option value="fallback">优先降级</option>
+              <option value="random">{t('backendConfig.strategyRandom')}</option>
+              <option value="fallback">{t('backendConfig.strategyFallback')}</option>
             </CustomSelect>
-            <span className="field__hint">random 随机轮询；fallback 优先第一个，出错时使用下一个</span>
+            <span className="field__hint">{t('backendConfig.strategyHint')}</span>
           </label>
           <label className="field">
-            <span>测试模型可用性</span>
+            <span>{t('backendConfig.checkAvailability')}</span>
             <CustomSelect
               disabled={readOnly}
               value={String(oaiConfig.checkAvailable ?? 'true')}
               onChange={(e) => updateOai('checkAvailable', e.target.value === 'true')}
             >
-              <option value="true">是</option>
-              <option value="false">否</option>
+              <option value="true">{t('common.yes')}</option>
+              <option value="false">{t('common.no')}</option>
             </CustomSelect>
           </label>
           <label className="field">
-            <span>请求超时(秒)</span>
+            <span>{t('backendConfig.apiTimeout')}</span>
             <input
               disabled={readOnly}
               type="number"
@@ -375,7 +376,7 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
             />
           </label>
           <label className="field">
-            <span>全局请求限速(RPM)</span>
+            <span>{t('backendConfig.globalRpm')}</span>
             <input
               disabled={readOnly}
               type="number"
@@ -383,17 +384,17 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
               value={String(oaiConfig.globalRequestRPM ?? 0)}
               onChange={(e) => updateOai('globalRequestRPM', Number(e.target.value))}
             />
-            <span className="field__hint">0 表示不限制；该限制在多任务间全局共享</span>
+            <span className="field__hint">{t('backendConfig.globalRpmHint')}</span>
           </label>
           <label className="field">
-            <span>API错误等待</span>
+            <span>{t('backendConfig.apiErrorWait')}</span>
             <input
               disabled={readOnly}
               type="text"
               value={String(oaiConfig.apiErrorWait ?? 'auto')}
               onChange={(e) => updateOai('apiErrorWait', e.target.value)}
             />
-            <span className="field__hint">auto 或 0-120秒</span>
+            <span className="field__hint">{t('backendConfig.apiErrorWaitHint')}</span>
           </label>
         </>
       )}
@@ -401,41 +402,41 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
       {/* SakuraLLM section */}
       {hasSakura && (
         <>
-          <h3 className="config-section-title" style={{ marginTop: hasOai ? '24px' : undefined }}>Sakura 本地模型</h3>
+          <h3 className="config-section-title" style={{ marginTop: hasOai ? '24px' : undefined }}>{t('backendConfig.sakuraLocal')}</h3>
           
           <div className="token-list">
             <div className="token-list__header">
-              <span className="token-list__title">端点列表</span>
+              <span className="token-list__title">{t('backendConfig.endpointList')}</span>
               {!readOnly && (
                 <button type="button" className="token-list__add-btn" onClick={addSakuraEndpoint}>
-                  + 添加端点
+                  {t('backendConfig.addEndpoint')}
                 </button>
               )}
             </div>
 
             {sakuraEndpoints.length === 0 && (
               <div className="token-list__empty">
-                暂无端点，请点击「添加端点」按钮添加。
+                {t('backendConfig.emptyEndpoints')}
               </div>
             )}
 
             {sakuraEndpoints.map((ep, idx) => (
               <div key={idx} className="token-entry" style={{ marginBottom: '12px' }}>
                 <div className="token-entry__header">
-                  <span className="token-entry__index">端点 #{idx + 1}</span>
+                  <span className="token-entry__index">{t('backendConfig.endpointIndex', { index: idx + 1 })}</span>
                   {!readOnly && (
                     <button
                       type="button"
                       className="token-entry__remove-btn"
                       onClick={() => removeSakuraEndpoint(idx)}
-                      title="删除此端点"
+                      title={t('backendConfig.deleteEndpoint')}
                     >
                       ✕
                     </button>
                   )}
                 </div>
                 <label className="field field--inline">
-                  <span>端点地址</span>
+                  <span>{t('backendConfig.endpointAddress')}</span>
                   <input
                     type="text"
                     disabled={readOnly}
@@ -455,14 +456,14 @@ export function BackendConfigEditor({ config, onChange, readOnly = false, proxy 
           </div>
 
           <label className="field" style={{ marginTop: '12px' }}>
-            <span>自定义模型名称</span>
+            <span>{t('backendConfig.customModelName')}</span>
             <input
               disabled={readOnly}
               type="text"
               value={String(sakuraConfig.rewriteModelName ?? '')}
               onChange={(e) => updateSakura('rewriteModelName', e.target.value)}
             />
-            <span className="field__hint">使用 ollama 时需修改此项</span>
+            <span className="field__hint">{t('backendConfig.customModelNameHint')}</span>
           </label>
         </>
       )}

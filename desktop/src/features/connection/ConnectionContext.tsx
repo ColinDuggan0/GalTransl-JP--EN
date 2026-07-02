@@ -3,6 +3,7 @@ import type { ConnectionPhase, TranslatorOption } from '../../lib/api';
 import { ensureDesktopBackendReady, fetchJobs, fetchTranslators, fetchVersion, fetchVersionCheck } from '../../lib/api';
 import { normalizeError } from '../../lib/errors';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { t } from '../../i18n';
 
 type ConnectionContextValue = {
   backendUrl: string;
@@ -27,7 +28,7 @@ export function useConnection(): ConnectionContextValue {
 
 export function ConnectionProvider({ children }: { children: React.ReactNode }) {
   const [connectionPhase, setConnectionPhase] = useState<ConnectionPhase>('connecting');
-  const [connectionMessage, setConnectionMessage] = useState('正在连接本地翻译后端…');
+  const [connectionMessage, setConnectionMessage] = useState(t('connection.messageConnecting'));
   const [translators, setTranslators] = useState<TranslatorOption[]>([]);
   const [loadingInitialData, setLoadingInitialData] = useState(true);
   const [refreshingJobs, setRefreshingJobs] = useState(false);
@@ -45,9 +46,9 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
     try {
       await fetchJobs();
       setConnectionPhase('online');
-      setConnectionMessage('已连接到本地后端，任务状态会自动轮询刷新。');
+      setConnectionMessage(t('connection.messageOnlineJobs'));
     } catch (error) {
-      const message = normalizeError(error, '读取任务列表失败');
+      const message = normalizeError(error, t('connection.errorFetchJobs'));
       setConnectionPhase('offline');
       setConnectionMessage(message);
     } finally {
@@ -60,12 +61,12 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
   const loadInitialData = useCallback(async () => {
     setLoadingInitialData(true);
     setConnectionPhase('connecting');
-    setConnectionMessage('正在准备本地翻译服务…');
+    setConnectionMessage(t('connection.messagePreparing'));
 
     try {
-      setConnectionMessage('正在启动并检查本地翻译服务…');
+      setConnectionMessage(t('connection.messageStarting'));
       await ensureDesktopBackendReady({ timeoutMs: 20_000 });
-      setConnectionMessage('本地翻译服务已就绪，正在加载能力信息…');
+      setConnectionMessage(t('connection.messageReadyLoading'));
       const nextTranslators = await fetchTranslators();
       setTranslators(nextTranslators);
 
@@ -89,14 +90,14 @@ export function ConnectionProvider({ children }: { children: React.ReactNode }) 
           if (!result.update_available) {
             return;
           }
-          await applyWindowTitle(`GalTransl Desktop - v${result.version}（有新版本）`);
+          await applyWindowTitle(`GalTransl Desktop - v${result.version} (${t('connection.windowUpdateAvailable')})`);
         })
         .catch(() => undefined);
 
       setConnectionPhase('online');
-      setConnectionMessage('后端在线，可以立即提交本地翻译任务。');
+      setConnectionMessage(t('connection.messageBackendOnline'));
     } catch (error) {
-      const message = normalizeError(error, '无法连接到本地后端');
+      const message = normalizeError(error, t('connection.errorConnect'));
       setTranslators([]);
       setConnectionPhase('offline');
       setConnectionMessage(message);

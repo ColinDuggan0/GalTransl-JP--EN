@@ -22,7 +22,7 @@ import {
   setSelectedTranslatorTemplate,
   stopProjectTranslation,
   submitJob } from '../lib/api';
-import { normalizeError } from '../lib/errors';
+import { normalizeError, toDisplayError } from '../lib/errors';
 import { usePrefersReducedMotion, LAUNCH, STRIP_BOOT, BAR_SURGE, COMPLETE, FRESH_HIGHLIGHT_MS } from '../lib/motion';
 import {
   RuntimeErrorRow,
@@ -587,7 +587,8 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
   );
   const statusTone = runtimeStage === '检查模型可用性' ? 'checking-availability' : (currentJob?.status ?? 'pending');
   const statusLabel = runtimeStage === '检查模型可用性' ? '测试模型可用性' : getStatusLabel(currentJob?.status);
-  const currentJobError = currentJob?.error?.trim() ?? '';
+  const rawCurrentJobError = currentJob?.error?.trim() ?? '';
+  const currentJobError = rawCurrentJobError ? toDisplayError(rawCurrentJobError) : '';
   const cancelledToastTitle = currentJob?.translator === 'GenDic' ? 'GenDic 已停止' : '任务已取消';
   const cancelledToastDescription = useMemo(() => {
     if (!currentJob || currentJob.status !== 'cancelled') return currentJobError;

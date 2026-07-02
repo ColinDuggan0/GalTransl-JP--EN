@@ -34,6 +34,7 @@ import {
   setThemeModePreference,
 } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 
 const PROJECT_HOMEPAGE = 'https://github.com/GalTransl/GalTransl';
 const PROJECT_AUTHOR = 'xd2333';
@@ -54,7 +55,7 @@ function PluginListSection() {
         if (!cancelled) setPlugins(res);
       })
       .catch((err) => {
-        if (!cancelled) setError(normalizeError(err, '加载插件列表失败'));
+        if (!cancelled) setError(normalizeError(err, t('settings.plugins.loadFailed')));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -70,15 +71,15 @@ function PluginListSection() {
     <section className="panel">
       <header className="panel__header">
         <div>
-          <h2>插件清单</h2>
-          <p>查看当前可用的翻译插件。</p>
+          <h2>{t('settings.plugins.title')}</h2>
+          <p>{t('settings.plugins.description')}</p>
         </div>
       </header>
 
       {loading ? (
-        <LoadingState title="加载插件中…" description="正在读取当前可用的文件插件与文本插件。" />
+        <LoadingState title={t('settings.plugins.loadingTitle')} description={t('settings.plugins.loadingDescription')} />
       ) : error ? (
-        <ErrorState title="加载插件列表失败" description={error} />
+        <ErrorState title={t('settings.plugins.loadFailed')} description={error} />
       ) : (
         <>
           <div className="plugin-tabs">
@@ -86,27 +87,27 @@ function PluginListSection() {
               className={`plugin-tab ${typeFilter === '' ? 'plugin-tab--active' : ''}`}
               onClick={() => setTypeFilter('')}
             >
-              全部 ({plugins.length})
+              {t('settings.plugins.all', { count: plugins.length })}
             </button>
             <button
               className={`plugin-tab ${typeFilter === 'file' ? 'plugin-tab--active' : ''}`}
               onClick={() => setTypeFilter('file')}
             >
-              文件插件 ({filePlugins.length})
+              {t('settings.plugins.file', { count: filePlugins.length })}
             </button>
             <button
               className={`plugin-tab ${typeFilter === 'text' ? 'plugin-tab--active' : ''}`}
               onClick={() => setTypeFilter('text')}
             >
-              文本插件 ({textPlugins.length})
+              {t('settings.plugins.text', { count: textPlugins.length })}
             </button>
           </div>
 
           <div className="plugin-list">
             {filteredPlugins.length === 0 ? (
               <EmptyState
-                title={typeFilter ? '当前筛选下没有插件' : '暂无插件'}
-                description={typeFilter ? '试试切换到其他插件类型，或检查后端插件目录。' : '后端暂未返回任何插件信息。'}
+                title={typeFilter ? t('settings.plugins.emptyFilteredTitle') : t('settings.plugins.emptyTitle')}
+                description={typeFilter ? t('settings.plugins.emptyFilteredDescription') : t('settings.plugins.emptyDescription')}
               />
             ) : filteredPlugins.map((plugin) => (
               <div key={plugin.name} className="plugin-card">
@@ -114,19 +115,19 @@ function PluginListSection() {
                   <span className="plugin-card__name">{plugin.display_name}</span>
                   <span className="plugin-card__version">v{plugin.version}</span>
                   <span className={`plugin-card__type plugin-card__type--${plugin.type}`}>
-                    {plugin.type === 'file' ? '文件' : '文本'}
+                    {plugin.type === 'file' ? t('settings.plugins.typeFile') : t('settings.plugins.typeText')}
                   </span>
                 </div>
                 <div className="plugin-card__meta">
-                  {plugin.author && <span>作者: {plugin.author}</span>}
-                  <span>模块: {plugin.module}</span>
+                  {plugin.author && <span>{t('settings.plugins.author', { author: plugin.author })}</span>}
+                  <span>{t('settings.plugins.module', { module: plugin.module })}</span>
                 </div>
                 {plugin.description && (
                   <p className="plugin-card__desc">{plugin.description}</p>
                 )}
                 {Object.keys(plugin.settings).length > 0 && (
                   <div className="plugin-card__settings">
-                    <h4>设置项</h4>
+                    <h4>{t('settings.plugins.settings')}</h4>
                     {Object.entries(plugin.settings).map(([key, value]) => (
                       <div key={key} className="plugin-setting-item">
                         <span className="plugin-setting-item__key">{key}:</span>
@@ -206,7 +207,7 @@ export function SettingsPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setVersionCheckError(normalizeError(error, '检查更新失败'));
+          setVersionCheckError(normalizeError(error, t('settings.errorCheckUpdate')));
         }
       })
       .finally(() => {
@@ -256,7 +257,7 @@ export function SettingsPage() {
       });
       setCustomBackgroundOpacityInput(String(next.opacity));
     } catch (err) {
-      setCustomBackgroundError(normalizeError(err, '保存背景设置失败'));
+      setCustomBackgroundError(normalizeError(err, t('settings.errorSaveBackgroundSettings')));
     }
   }, []);
 
@@ -271,7 +272,7 @@ export function SettingsPage() {
       });
       setCustomBackgroundSurfaceOpacityInput(String(next.surfaceOpacity));
     } catch (err) {
-      setCustomBackgroundError(normalizeError(err, '保存背景设置失败'));
+      setCustomBackgroundError(normalizeError(err, t('settings.errorSaveBackgroundSettings')));
     }
   }, []);
 
@@ -282,7 +283,7 @@ export function SettingsPage() {
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setCustomBackgroundError('请选择图片文件。');
+      setCustomBackgroundError(t('settings.errorChooseImage'));
       return;
     }
 
@@ -302,11 +303,11 @@ export function SettingsPage() {
       setCustomBackgroundOpacityInput(String(next.opacity));
       setCustomBackgroundSurfaceOpacityInput(String(next.surfaceOpacity));
     } catch (err) {
-      const message = normalizeError(err, '保存背景失败');
+      const message = normalizeError(err, t('settings.errorSaveBackground'));
       // 典型原因：localStorage 配额溢出。提醒用户换更小的图。
       const isQuota = err instanceof DOMException && (err.name === 'QuotaExceededError' || err.code === 22);
       setCustomBackgroundError(
-        isQuota ? '图片过大，浏览器本地存储空间不足。请选择更小或更低分辨率的图片。' : message,
+        isQuota ? t('settings.errorImageTooLarge') : message,
       );
     } finally {
       setCustomBackgroundBusy(false);
@@ -328,19 +329,19 @@ export function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <PageHeader className="settings-page__header" title="设置" description="管理应用配置和后端连接。" />
+      <PageHeader className="settings-page__header" title={t('settings.title')} description={t('settings.description')} />
 
       <div className="settings-page__content">
         <section className="panel">
           <header className="panel__header">
             <div>
-              <h2>外观</h2>
-              <p>设置界面主题风格，以及半透明的全局自定义背景。</p>
+              <h2>{t('settings.appearance.title')}</h2>
+              <p>{t('settings.appearance.description')}</p>
             </div>
           </header>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">主题模式</span>
+            <span className="settings-number-row__label">{t('settings.themeMode')}</span>
             <div className="settings-number-row__control">
               <CustomSelect
                 value={themeMode}
@@ -348,15 +349,15 @@ export function SettingsPage() {
                   applyThemeMode(event.target.value as ThemeMode);
                 }}
               >
-                <option value="light">浅色</option>
-                <option value="dark">深色</option>
-                <option value="system">跟随系统</option>
+                <option value="light">{t('settings.themeLight')}</option>
+                <option value="dark">{t('settings.themeDark')}</option>
+                <option value="system">{t('settings.themeSystem')}</option>
               </CustomSelect>
             </div>
           </label>
 
           <label className="settings-toggle-row">
-            <span className="settings-toggle-row__label">隐藏服务端控制台</span>
+            <span className="settings-toggle-row__label">{t('settings.hideBackendConsole')}</span>
             <div className="settings-toggle-row__control">
               <input
                 type="checkbox"
@@ -369,7 +370,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">自定义背景</span>
+            <span className="settings-number-row__label">{t('settings.customBackground')}</span>
            <div className="settings-number-row__control settings-background-control">
               <input
                 ref={customBackgroundInputRef}
@@ -380,9 +381,9 @@ export function SettingsPage() {
               />
               <span
                 className={`settings-background-control__filename${customBackgroundImageName ? '' : ' settings-background-control__filename--empty'}`}
-                title={customBackgroundImageName || '尚未选择图片'}
+                title={customBackgroundImageName || t('settings.noImageSelected')}
               >
-                {customBackgroundImageName || '尚未选择图片'}
+                {customBackgroundImageName || t('settings.noImageSelected')}
               </span>
               <span className="settings-background-control__actions">
                 <button
@@ -391,16 +392,16 @@ export function SettingsPage() {
                   onClick={triggerCustomBackgroundPicker}
                   disabled={customBackgroundBusy}
                 >
-                  {customBackgroundBusy ? '处理中…' : customBackgroundImageDataUrl ? '更换图片' : '选择图片'}
+                  {customBackgroundBusy ? t('settings.processing') : customBackgroundImageDataUrl ? t('settings.replaceImage') : t('settings.chooseImage')}
                 </button>
                 <button
                   type="button"
                   className="settings-background-control__clear"
                   onClick={clearCustomBackground}
                   disabled={!customBackgroundImageDataUrl || customBackgroundBusy}
-                  aria-label="清除自定义背景"
+                  aria-label={t('settings.clearCustomBackground')}
                 >
-                  清除
+                  {t('settings.clear')}
                 </button>
               </span>
             </div>
@@ -413,7 +414,7 @@ export function SettingsPage() {
           )}
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">背景透明度</span>
+            <span className="settings-number-row__label">{t('settings.backgroundOpacity')}</span>
             <div className="settings-number-row__control settings-opacity-control">
               <input
                 type="range"
@@ -446,7 +447,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">容器不透明度</span>
+            <span className="settings-number-row__label">{t('settings.surfaceOpacity')}</span>
             <div className="settings-number-row__control settings-opacity-control">
               <input
                 type="range"
@@ -479,7 +480,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">缓存与问题字号</span>
+            <span className="settings-number-row__label">{t('settings.cacheFontSize')}</span>
             <div className="settings-number-row__control settings-opacity-control">
               <input
                 type="range"
@@ -512,17 +513,16 @@ export function SettingsPage() {
           </label>
 
           <div className="settings-toggle-row__desc">
-            {customBackgroundImageDataUrl ? '已启用自定义背景。' : '未设置自定义背景。'}
-            主题、背景和容器透底设置会即时生效，并在下次打开应用时保持。
-            自动拉起服务端时会按“隐藏服务端控制台”选项决定是否显示命令行窗口。
+            {customBackgroundImageDataUrl ? t('settings.backgroundEnabled') : t('settings.backgroundDisabled')}
+            {t('settings.appearanceNote')}
           </div>
         </section>
 
         <section className="panel">
           <header className="panel__header">
             <div>
-              <h2>提示词</h2>
-              <p>管理各翻译模板的默认提示词，可分别编辑并一键重置为内置值。</p>
+              <h2>{t('settings.prompts.title')}</h2>
+              <p>{t('settings.prompts.description')}</p>
             </div>
           </header>
           <div className="settings-action-row">
@@ -533,7 +533,7 @@ export function SettingsPage() {
                 navigate('/settings/prompt-templates');
               }}
             >
-              修改默认提示词
+              {t('settings.prompts.editDefaults')}
             </button>
           </div>
         </section>
@@ -541,14 +541,14 @@ export function SettingsPage() {
         <section className="panel">
           <header className="panel__header">
             <div>
-              <h2>关于</h2>
-              <p>查看项目基础信息与版本更新状态。</p>
+              <h2>{t('settings.about.title')}</h2>
+              <p>{t('settings.about.description')}</p>
             </div>
           </header>
 
           <div className="settings-about-list">
             <div className="settings-about-list__row">
-              <span className="settings-about-list__label">项目主页</span>
+              <span className="settings-about-list__label">{t('common.projectHomepage')}</span>
               <a
                 className="settings-about-list__value settings-about-list__value--link"
                 href={PROJECT_HOMEPAGE}
@@ -560,44 +560,44 @@ export function SettingsPage() {
             </div>
 
             <div className="settings-about-list__row">
-              <span className="settings-about-list__label">当前版本</span>
+              <span className="settings-about-list__label">{t('common.currentVersion')}</span>
               <span className="settings-about-list__value">{coreVersion ? `v${coreVersion}` : '—'}</span>
             </div>
 
             <div className="settings-about-list__row">
-              <span className="settings-about-list__label">更新状态</span>
+              <span className="settings-about-list__label">{t('settings.updateStatus')}</span>
               <span className="settings-about-list__value">
                 {checkingVersion
-                  ? '检查中…'
+                  ? t('settings.checking')
                   : updateAvailable && latestVersion
-                    ? `发现新版本 v${latestVersion}`
-                    : '已是最新版本'}
+                    ? t('home.updateAvailable', { version: latestVersion })
+                    : t('settings.latestVersion')}
               </span>
             </div>
 
             {updateAvailable && latestVersion ? (
               <div className="settings-about-list__row">
-                <span className="settings-about-list__label">更新下载</span>
+                <span className="settings-about-list__label">{t('settings.updateDownload')}</span>
                 <a
                   className="settings-about-list__value settings-about-list__value--link"
                   href={PROJECT_HOMEPAGE + '/releases/latest'}
                   target="_blank"
                   rel="noreferrer noopener"
                 >
-                  前往最新发布页
+                  {t('settings.latestRelease')}
                 </a>
               </div>
             ) : null}
 
             <div className="settings-about-list__row">
-              <span className="settings-about-list__label">作者</span>
+              <span className="settings-about-list__label">{t('common.author')}</span>
               <span className="settings-about-list__value">{PROJECT_AUTHOR}</span>
             </div>
           </div>
 
           {versionCheckError ? (
             <div className="settings-toggle-row__desc">
-              更新检查失败：{versionCheckError}
+              {t('settings.updateCheckFailed', { error: versionCheckError })}
             </div>
           ) : null}
         </section>
@@ -605,13 +605,13 @@ export function SettingsPage() {
         <section className="panel">
           <header className="panel__header">
             <div>
-              <h2>首页记忆保留</h2>
-              <p>控制首页历史项目与翻译任务列表保留条数。</p>
+              <h2>{t('settings.homeRetention.title')}</h2>
+              <p>{t('settings.homeRetention.description')}</p>
             </div>
           </header>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">历史项目保留条数</span>
+            <span className="settings-number-row__label">{t('settings.historyLimit')}</span>
             <div className="settings-number-row__control">
               <input
                 type="number"
@@ -634,7 +634,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-number-row">
-            <span className="settings-number-row__label">翻译任务保留条数</span>
+            <span className="settings-number-row__label">{t('settings.jobLimit')}</span>
             <div className="settings-number-row__control">
               <input
                 type="number"
@@ -657,7 +657,7 @@ export function SettingsPage() {
           </label>
 
           <div className="settings-toggle-row__desc">
-            取值范围 {HOME_LIST_LIMIT_MIN}-{HOME_LIST_LIMIT_MAX}。超出范围会自动修正。
+            {t('settings.retentionRange', { min: HOME_LIST_LIMIT_MIN, max: HOME_LIST_LIMIT_MAX })}
           </div>
         </section>
 
@@ -691,7 +691,7 @@ async function compressImageToDataUrl(file: File): Promise<string> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('无法读取图片文件。'));
+      image.onerror = () => reject(new Error(t('settings.errorReadImage')));
       image.src = objectUrl;
     });
 
@@ -704,7 +704,7 @@ async function compressImageToDataUrl(file: File): Promise<string> {
     canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new Error('当前环境不支持 canvas 压缩。');
+      throw new Error(t('settings.errorCanvasUnsupported'));
     }
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 

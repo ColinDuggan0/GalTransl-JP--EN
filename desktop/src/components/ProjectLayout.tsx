@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { decodeProjectDir } from '../lib/api';
 import { loadLastProjectTab, saveLastProjectTab } from '../lib/projectTabMemory';
+import { t, type TranslationKey } from '../i18n';
 
 const ProjectTranslatePage = lazy(async () => {
   const mod = await import('../pages/ProjectTranslatePage');
@@ -40,12 +41,12 @@ function loadConfigFileName(projectDir: string): string {
 }
 
 /** Tab path → component mapping */
-const TAB_MAP: { path: string; label: string }[] = [
-  { path: 'translate', label: '翻译工作台' },
-  { path: 'cache', label: '缓存与问题' },
-  { path: 'config', label: '配置编辑' },
-  { path: 'dictionary', label: '项目字典' },
-  { path: 'names', label: '人名翻译' },
+const TAB_MAP: { path: string; labelKey: TranslationKey }[] = [
+  { path: 'translate', labelKey: 'nav.project.translate' },
+  { path: 'cache', labelKey: 'nav.project.cache' },
+  { path: 'config', labelKey: 'nav.project.config' },
+  { path: 'dictionary', labelKey: 'nav.project.dictionary' },
+  { path: 'names', labelKey: 'nav.project.names' },
 ];
 
 /** Shared context passed to every child page */
@@ -123,7 +124,7 @@ export function ProjectLayout() {
 
   return (
     <div className="project-layout">
-      <Suspense fallback={<div className="inline-feedback">页面加载中…</div>}>
+      <Suspense fallback={<div className="inline-feedback">{t('common.loadingPage')}</div>}>
         {activeTab === 'translate' ? <ProjectTranslatePage ctx={ctx} /> : null}
         {activeTab === 'config' ? <ProjectConfigPage ctx={ctx} /> : null}
         {shouldRenderDictionary ? (
