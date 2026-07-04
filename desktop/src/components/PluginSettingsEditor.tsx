@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { PluginInfo } from '../lib/api';
+import { t } from '../i18n';
 
 /**
  * 通用插件设置编辑器组件。
@@ -39,13 +40,13 @@ export function PluginSettingsEditor({ plugin, overrides, onChange }: PluginSett
 
   // 无设置项
   if (settingKeys.length === 0) {
-    return <div className="plugin-settings-empty">此插件无可配置的设置项</div>;
+    return <div className="plugin-settings-empty">{t('projectConfig.plugin.noSettings')}</div>;
   }
 
   return (
     <div className="plugin-settings-panel">
       <div className="plugin-settings-panel__title">
-        {plugin.display_name} 设置
+        {t('projectConfig.plugin.settingsTitle', { name: plugin.display_name })}
       </div>
       <div className="plugin-settings-panel__fields">
         {settingKeys.map((key) => {
@@ -177,7 +178,7 @@ function PluginSettingRow({
             onChange={handleArrayChange}
             className="plugin-setting-textarea"
           />
-          <span className="plugin-setting-row__hint">每行一项</span>
+          <span className="plugin-setting-row__hint">{t('projectConfig.plugin.lineHint')}</span>
         </div>
       </label>
     );

@@ -8,6 +8,7 @@ import {
   type CommonDictionaryManagerResponse,
   type DictionaryCategory } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 
 
 export function CommonDictionaryPage() {
@@ -22,7 +23,7 @@ export function CommonDictionaryPage() {
       const res = await fetchCommonDictionaryManager();
       setData(res);
     } catch (err) {
-      setError(normalizeError(err, '加载通用字典失败'));
+      setError(normalizeError(err, t('dictionary.common.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -34,8 +35,8 @@ export function CommonDictionaryPage() {
 
   return (
     <DictionaryManager
-      title="通用字典管理"
-      description="仅管理程序根目录 Dict 下的通用字典文件，支持卡片编辑与纯文本编辑。"
+      title={t('dictionary.common.title')}
+      description={t('dictionary.common.description')}
       data={data}
       loading={loading}
       error={error}

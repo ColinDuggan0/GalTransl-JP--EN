@@ -1,5 +1,6 @@
 import { Panel } from '../../components/Panel';
 import { CustomSelect } from '../../components/CustomSelect';
+import { t } from '../../i18n';
 
 interface DictionarySettingsSectionProps {
   dictConfig: Record<string, unknown>;
@@ -8,7 +9,7 @@ interface DictionarySettingsSectionProps {
 
 export function DictionarySettingsSection({ dictConfig, onChange }: DictionarySettingsSectionProps) {
   return (
-    <Panel title="字典设置" description="译前/GPT/译后字典文件配置。(project_dir)代表在项目目录下">
+    <Panel title={t('projectConfig.dictionary.title')} description={t('projectConfig.dictionary.description')}>
       <DictConfigEditor dictConfig={dictConfig} onChange={onChange} />
     </Panel>
   );
@@ -25,7 +26,7 @@ function DictConfigEditor({
   return (
     <>
       <label className="field">
-        <span>通用字典文件夹</span>
+        <span>{t('projectConfig.dictionary.defaultFolder')}</span>
         <input
           type="text"
           value={String(dictConfig.defaultDictFolder ?? 'Dict')}
@@ -33,70 +34,70 @@ function DictConfigEditor({
         />
       </label>
       <label className="field">
-        <span>译前字典</span>
+        <span>{t('projectConfig.dictionary.preDict')}</span>
         <textarea
           rows={4}
           value={Array.isArray(dictConfig.preDict) ? (dictConfig.preDict as string[]).join('\n') : String(dictConfig.preDict ?? '')}
           onChange={(e) => onChange({ ...dictConfig, preDict: e.target.value.split('\n').filter(Boolean) })}
         />
-        <span className="field__hint">每行一个字典文件名</span>
+        <span className="field__hint">{t('projectConfig.dictionary.lineHint')}</span>
       </label>
       <label className="field">
-        <span>GPT字典</span>
+        <span>{t('projectConfig.dictionary.gptDict')}</span>
         <textarea
           rows={4}
           value={Array.isArray(dictConfig['gpt.dict']) ? (dictConfig['gpt.dict'] as string[]).join('\n') : String(dictConfig['gpt.dict'] ?? '')}
           onChange={(e) => onChange({ ...dictConfig, 'gpt.dict': e.target.value.split('\n').filter(Boolean) })}
         />
-        <span className="field__hint">每行一个字典文件名</span>
+        <span className="field__hint">{t('projectConfig.dictionary.lineHint')}</span>
       </label>
       <label className="field">
-        <span>译后字典</span>
+        <span>{t('projectConfig.dictionary.postDict')}</span>
         <textarea
           rows={4}
           value={Array.isArray(dictConfig.postDict) ? (dictConfig.postDict as string[]).join('\n') : String(dictConfig.postDict ?? '')}
           onChange={(e) => onChange({ ...dictConfig, postDict: e.target.value.split('\n').filter(Boolean) })}
         />
-        <span className="field__hint">每行一个字典文件名</span>
+        <span className="field__hint">{t('projectConfig.dictionary.lineHint')}</span>
       </label>
       <label className="field">
-        <span>字典用在name字段(译前)</span>
+        <span>{t('projectConfig.dictionary.usePreInName')}</span>
         <CustomSelect
           value={String(dictConfig.usePreDictInName ?? 'false')}
           onChange={(e) => onChange({ ...dictConfig, usePreDictInName: e.target.value === 'true' })}
         >
-          <option value="true">是</option>
-          <option value="false">否</option>
+          <option value="true">{t('common.yes')}</option>
+          <option value="false">{t('common.no')}</option>
         </CustomSelect>
       </label>
       <label className="field">
-        <span>字典用在name字段(GPT)</span>
+        <span>{t('projectConfig.dictionary.useGptInName')}</span>
         <CustomSelect
           value={String(dictConfig.useGPTDictInName ?? 'false')}
           onChange={(e) => onChange({ ...dictConfig, useGPTDictInName: e.target.value === 'true' })}
         >
-          <option value="true">是</option>
-          <option value="false">否</option>
+          <option value="true">{t('common.yes')}</option>
+          <option value="false">{t('common.no')}</option>
         </CustomSelect>
       </label>
       <label className="field">
-        <span>字典用在name字段(译后)</span>
+        <span>{t('projectConfig.dictionary.usePostInName')}</span>
         <CustomSelect
           value={String(dictConfig.usePostDictInName ?? 'false')}
           onChange={(e) => onChange({ ...dictConfig, usePostDictInName: e.target.value === 'true' })}
         >
-          <option value="true">是</option>
-          <option value="false">否</option>
+          <option value="true">{t('common.yes')}</option>
+          <option value="false">{t('common.no')}</option>
         </CustomSelect>
       </label>
       <label className="field">
-        <span>字典排序</span>
+        <span>{t('projectConfig.dictionary.sortDict')}</span>
         <CustomSelect
           value={String(dictConfig.sortDict ?? 'true')}
           onChange={(e) => onChange({ ...dictConfig, sortDict: e.target.value === 'true' })}
         >
-          <option value="true">是</option>
-          <option value="false">否</option>
+          <option value="true">{t('common.yes')}</option>
+          <option value="false">{t('common.no')}</option>
         </CustomSelect>
       </label>
     </>

@@ -36,6 +36,7 @@ import {
   formatElapsedTime,
   formatPercentDisplay,
   clampPercent } from './translateRuntimeShared';
+import { t } from '../i18n';
 
 const JOB_POLL_INTERVAL_MS = 2000;
 const RUNTIME_POLL_INTERVAL_MS = 1000;
@@ -83,7 +84,7 @@ function uniqueNonEmpty(values: string[]): string[] {
 
 function collectBackendModels(config: Record<string, unknown> | null): { backend: string; model: string } {
   if (!config) {
-    return { backend: '未配置后端类型', model: '未填写模型' };
+    return { backend: t('translate.backendMissing'), model: t('translate.modelMissing') };
   }
 
   const enabledBackends: string[] = [];
@@ -106,8 +107,8 @@ function collectBackendModels(config: Record<string, unknown> | null): { backend
   }
 
   return {
-    backend: uniqueNonEmpty(enabledBackends).join(' / ') || '未配置后端类型',
-    model: uniqueNonEmpty(models).join(' / ') || '未填写模型',
+    backend: uniqueNonEmpty(enabledBackends).join(' / ') || t('translate.backendMissing'),
+    model: uniqueNonEmpty(models).join(' / ') || t('translate.modelMissing'),
   };
 }
 
@@ -116,7 +117,7 @@ function summarizeBackendUsage(projectDir: string, projectBackendConfig: Record<
   const activeConfig = profile ?? projectBackendConfig;
   const { model } = collectBackendModels(activeConfig);
   return {
-    backend: profile ? name : '自定义后端',
+    backend: profile ? name : t('translate.customBackend'),
     model,
     profile: name,
   };
@@ -232,7 +233,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
       setRuntimeError(null);
     } catch (error) {
       if (!silent) {
-        setRuntimeError(normalizeError(error, '读取运行时快照失败'));
+        setRuntimeError(normalizeError(error, t('translate.errorRuntimeSnapshot')));
       }
     }
   }, [projectId]);
@@ -453,7 +454,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
         setJobs((current) => [createdJob, ...current.filter((job) => job.job_id !== createdJob.job_id)]);
         await refreshRuntime(true);
       } catch (error) {
-        const message = normalizeError(error, '提交任务失败');
+        const message = normalizeError(error, t('translate.errorSubmit'));
         setSubmitError(message);
         throw error;
       } finally {
@@ -465,7 +466,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
 
   const handleStartTranslation = useCallback(() => {
     if (!projectDir || !selectedTranslator || !isSelectedTranslatorValid) {
-      setSubmitError('请选择翻译模板。');
+      setSubmitError(t('translate.errorSelectTemplate'));
       return;
     }
     setSubmitError(null);
@@ -538,7 +539,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
       await refreshRuntime();
       await refreshJobs();
     } catch (error) {
-      const message = normalizeError(error, '停止任务失败');
+      const message = normalizeError(error, t('translate.errorStop'));
       setSubmitError(message);
       void refreshRuntime();
       void refreshJobs();
@@ -571,7 +572,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
   const backendUsageSummary = useMemo(
     () => projectDir
       ? summarizeBackendUsage(projectDir, projectBackendConfig)
-      : { backend: '未选择项目', model: '未选择项目', profile: '' },
+      : { backend: t('translate.noProject'), model: t('translate.noProject'), profile: '' },
     [projectDir, projectBackendConfig],
   );
   const backendDisplayText = `${backendUsageSummary.backend}:${backendUsageSummary.model}`;
@@ -586,17 +587,17 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
     [runtimeMatchesProject, runtime?.retransl_stats],
   );
   const statusTone = runtimeStage === '检查模型可用性' ? 'checking-availability' : (currentJob?.status ?? 'pending');
-  const statusLabel = runtimeStage === '检查模型可用性' ? '测试模型可用性' : getStatusLabel(currentJob?.status);
+  const statusLabel = runtimeStage === '检查模型可用性' ? t('translate.checkingAvailability') : getStatusLabel(currentJob?.status);
   const rawCurrentJobError = currentJob?.error?.trim() ?? '';
   const currentJobError = rawCurrentJobError ? toDisplayError(rawCurrentJobError) : '';
-  const cancelledToastTitle = currentJob?.translator === 'GenDic' ? 'GenDic 已停止' : '任务已取消';
+  const cancelledToastTitle = currentJob?.translator === 'GenDic' ? t('translate.genDicStopped') : t('translate.taskCancelled');
   const cancelledToastDescription = useMemo(() => {
     if (!currentJob || currentJob.status !== 'cancelled') return currentJobError;
     if (currentJob.translator !== 'GenDic') return currentJobError;
     const addedEntries = Number(currentJob.gendic_added_entries ?? 0);
     const dupEntries = Number(currentJob.gendic_duplicated_entries ?? 0);
     if (Number.isFinite(addedEntries) && addedEntries >= 0 && Number.isFinite(dupEntries) && dupEntries >= 0) {
-      return `已使用当前结果生成字典，新增${addedEntries}条，重复${dupEntries}条`;
+      return t('translate.genDicSummary', { added: addedEntries, duplicates: dupEntries });
     }
     return currentJobError;
   }, [currentJob, currentJobError]);
@@ -610,7 +611,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
   const speedText = formatSpeed(summary?.translation_speed_lpm ?? 0);
   const etaText = formatEta(summary?.eta_seconds ?? 0);
   const elapsedText = formatElapsedTime(currentJob, nowMs);
-  const updatedAtText = summary?.updated_at ? formatDate(summary.updated_at) : '等待首次快照';
+  const updatedAtText = summary?.updated_at ? formatDate(summary.updated_at) : t('translate.waitingSnapshot');
 
   useEffect(() => {
     if (!currentJob?.started_at) return;
@@ -650,7 +651,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
     if (!hasSelectedSuccessFileFilter) return '';
     const preview = selectedSuccessFiles.slice(0, 2);
     const extraCount = selectedSuccessFiles.length - preview.length;
-    return extraCount > 0 ? `${preview.join('、')} 等 ${selectedSuccessFiles.length} 个文件` : preview.join('、');
+    return extraCount > 0 ? t('translate.fileSummaryWithMore', { files: preview.join(', '), count: selectedSuccessFiles.length }) : preview.join(', ');
   }, [hasSelectedSuccessFileFilter, selectedSuccessFiles]);
 
   const successEntries = useMemo(
@@ -674,7 +675,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
     || submitting
     || stopping
     || (!isCurrentProjectActive && !isSelectedTranslatorValid);
-  const primaryActionLabel = isCurrentProjectActive ? (stopping ? '停止中…' : '停止翻译') : (submitting ? '提交中…' : '启动翻译');
+  const primaryActionLabel = isCurrentProjectActive ? (stopping ? t('translate.stopping') : t('translate.stop')) : (submitting ? t('translate.submitting') : t('translate.start'));
   const handlePrimaryAction = isCurrentProjectActive ? handleStopTranslation : handleStartTranslation;
   const primaryActionClassName = isCurrentProjectActive ? 'project-translate-page__stop-button' : '';
 
@@ -768,7 +769,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
             <span className="ptv2-cockpit__eyebrow">Translation Cockpit</span>
             <div className="ptv2-cockpit__title-row">
               <h1 className="ptv2-cockpit__title">
-                翻译工作台
+                {t('translate.title')}
                 {projectName ? (
                   <>
                     <span className="ptv2-cockpit__title-sep">·</span>
@@ -783,8 +784,8 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                     className="ptv2-folder-iconbtn"
                     disabled={!projectDir}
                     onClick={() => handleOpenFolder(projectDir)}
-                    title={projectDir || '打开项目文件夹'}
-                    aria-label="打开项目文件夹"
+                    title={projectDir || t('translate.openProjectFolder')}
+                    aria-label={t('translate.openProjectFolder')}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                       <path
@@ -798,10 +799,10 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                     </svg>
                   </button>
                   <div className="project-translate-page__folder-menu-dropdown" role="menu">
-                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(projectDir)} title={projectDir} variant="secondary">📂 项目文件夹</Button>
-                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(inputFolderPath)} title={inputFolderPath} variant="secondary">📥 输入文件夹</Button>
-                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(outputFolderPath)} title={outputFolderPath} variant="secondary">📤 输出文件夹</Button>
-                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(cacheFolderPath)} title={cacheFolderPath} variant="secondary">💾 缓存文件夹</Button>
+                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(projectDir)} title={projectDir} variant="secondary">📂 {t('translate.folder.project')}</Button>
+                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(inputFolderPath)} title={inputFolderPath} variant="secondary">📥 {t('translate.folder.input')}</Button>
+                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(outputFolderPath)} title={outputFolderPath} variant="secondary">📤 {t('translate.folder.output')}</Button>
+                    <Button className="project-translate-page__folder-menu-item" disabled={!projectDir} onClick={() => handleOpenFolder(cacheFolderPath)} title={cacheFolderPath} variant="secondary">💾 {t('translate.folder.cache')}</Button>
                   </div>
                 </div>
               ) : null}
@@ -826,9 +827,9 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
               <span className="ptv2-gauge__fraction-done">{translatedCount}</span>
               <span className="ptv2-gauge__fraction-sep">/</span>
               <span className="ptv2-gauge__fraction-total">{totalCount}</span>
-              <span className="ptv2-gauge__fraction-unit">句</span>
+              <span className="ptv2-gauge__fraction-unit">{t('translate.unit.sentences')}</span>
               <span className="ptv2-gauge__fraction-divider" aria-hidden="true" />
-              <span className="ptv2-gauge__fraction-remain">剩余 {remainingCount}</span>
+              <span className="ptv2-gauge__fraction-remain">{t('translate.remainingCount', { count: remainingCount })}</span>
             </div>
           </div>
 
@@ -850,7 +851,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
 
           <div className="ptv2-cockpit__action">
             <label className="ptv2-cockpit__field">
-              <span className="ptv2-cockpit__field-label">翻译模板</span>
+              <span className="ptv2-cockpit__field-label">{t('translate.templateLabel')}</span>
               <CustomSelect
                 disabled={submitting || stopping || isCurrentProjectActive || translators.length === 0}
                 onChange={(event) => {
@@ -860,7 +861,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                 }}
                 value={selectedTranslator}
               >
-                {translators.length === 0 ? <option value="">暂无可用模板</option> : null}
+                {translators.length === 0 ? <option value="">{t('translate.noTemplates')}</option> : null}
                 {translators.map((item) => (
                   <option key={item.name} value={item.name}>{item.name} · {item.description}</option>
                 ))}
@@ -889,31 +890,31 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
         <div className="ptv2-cockpit__ribbon">
           <div className="ptv2-stat ptv2-stat--primary">
             <span className="ptv2-stat__value">{speedText}</span>
-            <span className="ptv2-stat__label">实时速度</span>
+            <span className="ptv2-stat__label">{t('translate.stat.speed')}</span>
           </div>
           <div className="ptv2-stat">
             <span className="ptv2-stat__value">{etaText}</span>
-            <span className="ptv2-stat__label">预计剩余</span>
+            <span className="ptv2-stat__label">{t('translate.stat.eta')}</span>
           </div>
           <div className="ptv2-stat">
             <span className="ptv2-stat__value">{workersActive}<span className="ptv2-stat__value-sep">/</span>{workersConfigured}</span>
-            <span className="ptv2-stat__label">工作线程</span>
+            <span className="ptv2-stat__label">{t('translate.stat.workers')}</span>
           </div>
           <div className="ptv2-stat">
             <span className="ptv2-stat__value">{elapsedText}</span>
-            <span className="ptv2-stat__label">已用时长</span>
+            <span className="ptv2-stat__label">{t('translate.stat.elapsed')}</span>
           </div>
-          <div className="ptv2-stat ptv2-stat--backend" title={`当前后端：${backendDisplayText}`}>
+          <div className="ptv2-stat ptv2-stat--backend" title={t('translate.stat.backendTitle', { backend: backendDisplayText })}>
             <span className="ptv2-stat__value">{backendDisplayText}</span>
-            <span className="ptv2-stat__label">当前后端</span>
+            <span className="ptv2-stat__label">{t('translate.stat.backend')}</span>
           </div>
         </div>
       </section>
 
-      {submitError ? <InlineFeedback tone="error" title="启动翻译失败" description={submitError} className="ptv2-alert inline-alert--floating" /> : null}
-      {runtimeError ? <InlineFeedback tone="error" title="运行时状态异常" description={runtimeError} className="ptv2-alert inline-alert--floating" /> : null}
+      {submitError ? <InlineFeedback tone="error" title={t('translate.alert.submitFailed')} description={submitError} className="ptv2-alert inline-alert--floating" /> : null}
+      {runtimeError ? <InlineFeedback tone="error" title={t('translate.alert.runtimeError')} description={runtimeError} className="ptv2-alert inline-alert--floating" /> : null}
       {currentJob?.status === 'failed' && currentJobError ? (
-        <InlineFeedback className="ptv2-alert inline-alert--floating" tone="error" title="任务失败" description={currentJobError} />
+        <InlineFeedback className="ptv2-alert inline-alert--floating" tone="error" title={t('translate.alert.jobFailed')} description={currentJobError} />
       ) : null}
       {currentJob?.status === 'cancelled' && currentJobError && cancelledAlertJobId === currentJob.job_id ? (
         <InlineFeedback
@@ -929,14 +930,14 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
       {/* Main area: success stream (wide) + recent errors (narrower) */}
       <div className="ptv2-main">
         <div className="ptv2-main__success">
-          <Panel title="成功句流">
+          <Panel title={t('translate.successStream.title')}>
             {hasSelectedSuccessFileFilter ? (
               <div className="runtime-success-filter-hint" role="status">
                 <span className="runtime-success-filter-hint__text" title={selectedSuccessFiles.join('\n')}>
-                  已筛选文件：{selectedSuccessFileFilterSummary}
+                  {t('translate.successFilter.active', { files: selectedSuccessFileFilterSummary })}
                 </span>
                 <button className="runtime-success-filter-hint__clear" onClick={handleClearSuccessFileFilters} type="button">
-                  取消所有筛选
+                  {t('translate.successFilter.clear')}
                 </button>
               </div>
             ) : null}
@@ -958,7 +959,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                 ))}
               </div>
             ) : (
-              <EmptyState title="还没有成功句流" description="任务开始输出后，最近成功的句子会滚动显示在这里。" />
+              <EmptyState title={t('translate.successStream.emptyTitle')} description={t('translate.successStream.emptyDescription')} />
             )}
           </Panel>
         </div>
@@ -966,7 +967,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
         <div className="ptv2-main__side">
           <section className="panel ptv2-tabpanel">
             <header className="panel__header ptv2-tabpanel__header">
-              <div role="tablist" aria-label="辅助信息" className="ptv2-tabs">
+              <div role="tablist" aria-label={t('translate.tabs.aria')} className="ptv2-tabs">
                 <button
                   type="button"
                   role="tab"
@@ -974,7 +975,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                   className={`ptv2-tab${rightTab === 'errors' ? ' ptv2-tab--active' : ''}`}
                   onClick={() => setRightTab('errors')}
                 >
-                  <span className="ptv2-tab__label">最近错误</span>
+                  <span className="ptv2-tab__label">{t('translate.tabs.errors')}</span>
                   {recentErrors.length > 0 ? (
                     <span className="ptv2-tab__badge ptv2-tab__badge--danger">{recentErrors.length}</span>
                   ) : null}
@@ -986,9 +987,9 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                   className={`ptv2-tab${rightTab === 'files' ? ' ptv2-tab--active' : ''}`}
                   onClick={() => setRightTab('files')}
                 >
-                  <span className="ptv2-tab__label">文件进度</span>
+                  <span className="ptv2-tab__label">{t('translate.tabs.files')}</span>
                   {unfinishedRuntimeFilesCount > 0 ? (
-                    <span className="ptv2-tab__badge" title="未完成的文件数量">{unfinishedRuntimeFilesCount}</span>
+                    <span className="ptv2-tab__badge" title={t('translate.tabs.unfinishedTitle')}>{unfinishedRuntimeFilesCount}</span>
                   ) : null}
                 </button>
                 <button
@@ -998,7 +999,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                   className={`ptv2-tab${rightTab === 'retransl' ? ' ptv2-tab--active' : ''}`}
                   onClick={() => setRightTab('retransl')}
                 >
-                  <span className="ptv2-tab__label">重翻词条</span>
+                  <span className="ptv2-tab__label">{t('translate.tabs.retransl')}</span>
                   {retranslKeys.length > 0 ? (
                     <span className="ptv2-tab__badge">{retranslKeys.length}</span>
                   ) : null}
@@ -1015,7 +1016,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="最近没有错误" description="接口错误、解析错误会显示在这里。" />
+                  <EmptyState title={t('translate.errors.emptyTitle')} description={t('translate.errors.emptyDescription')} />
                 )
               ) : rightTab === 'files' ? (
                 prioritizedRuntimeFiles.length > 0 ? (
@@ -1030,7 +1031,7 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="暂无文件进度" description="启动翻译后，文件级进度会在这里展开。" />
+                  <EmptyState title={t('translate.files.emptyTitle')} description={t('translate.files.emptyDescription')} />
                 )
               ) : (
                 <div className="ptv2-retransl-pane">
@@ -1045,10 +1046,10 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                       <span className="ptv2-retransl-auto__toggle-track" aria-hidden="true">
                         <span className="ptv2-retransl-auto__toggle-thumb" />
                       </span>
-                      <span className="ptv2-retransl-auto__toggle-label">自动持续重翻</span>
+                      <span className="ptv2-retransl-auto__toggle-label">{t('translate.retransl.auto')}</span>
                     </button>
                     <p className="ptv2-retransl-auto__hint">
-                      翻译结束后，自动启动翻译，直到连续3次待重翻的句子仍不减少。
+                      {t('translate.retransl.autoHint')}
                     </p>
                   </div>
                   {retranslKeys.length > 0 ? (
@@ -1059,19 +1060,19 @@ export function ProjectTranslatePage({ ctx }: { ctx: ProjectPageContext }) {
                           key={`${idx}-${item.key}`}
                           role="button"
                           tabIndex={0}
-                          title="点击跳转到配置编辑-重翻关键字"
+                          title={t('translate.retransl.configTitle')}
                           onClick={() => navigate(`/project/${projectId}/config?section=retranslKey`)}
                           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/project/${projectId}/config?section=retranslKey`); } }}
                         >
                           <span className="ptv2-retransl-list__index">{idx + 1}</span>
                           <span className="ptv2-retransl-list__text">{item.key}</span>
-                          <span className="ptv2-retransl-list__count">{item.count} 句</span>
+                          <span className="ptv2-retransl-list__count">{t('translate.retransl.count', { count: item.count })}</span>
                           <span className="ptv2-retransl-list__arrow">›</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <EmptyState title="暂无重翻词条" description="在项目配置「重翻关键字」中添加后，启动翻译时命中的句子会被重新翻译。" />
+                    <EmptyState title={t('translate.retransl.emptyTitle')} description={t('translate.retransl.emptyDescription')} />
                   )}
                 </div>
               )}

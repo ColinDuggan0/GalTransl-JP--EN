@@ -8,6 +8,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { Panel } from '../components/Panel';
 import { PageHeader } from '../components/PageHeader';
 import { InlineFeedback } from '../components/page-state';
+import { t } from '../i18n';
 import {
   BACKEND_PROFILES_CHANGE_EVENT,
   DEFAULT_BACKEND_PROFILE_CHANGE_EVENT,
@@ -25,7 +26,13 @@ import {
 } from '../lib/api';
 import { addProjectToHistory } from './HomePage';
 
-const STEPS = ['项目位置', '导入文件', '翻译后端', '常用设置', '提取人名'];
+const STEP_KEYS = [
+  'wizard.step.location',
+  'wizard.step.import',
+  'wizard.step.backend',
+  'wizard.step.settings',
+  'wizard.step.names',
+] as const;
 const LAST_PARENT_DIR_KEY = 'galtransl-new-project-last-parent-dir';
 
 type NewProjectWizardProps = {
@@ -34,6 +41,7 @@ type NewProjectWizardProps = {
 
 export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   const navigate = useNavigate();
+  const stepLabels = useMemo(() => STEP_KEYS.map((key) => t(key)), []);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepDirection, setStepDirection] = useState<'forward' | 'backward'>('forward');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -107,7 +115,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
       }
 
       if (pathsToImport.length === 0) {
-        setFeedback({ type: 'info', message: '已过滤重复文件，本次无新增导入。' });
+        setFeedback({ type: 'info', message: t('wizard.feedback.duplicateFiles') });
         return;
       }
 
@@ -118,11 +126,11 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         setFeedback({
           type: 'success',
           message: filteredCount > 0
-            ? `已导入 ${pathsToImport.length} 个文件，已过滤 ${filteredCount} 个重复文件`
-            : `已导入 ${pathsToImport.length} 个文件`,
+            ? t('wizard.feedback.importedWithDuplicates', { count: pathsToImport.length, duplicates: filteredCount })
+            : t('wizard.feedback.imported', { count: pathsToImport.length }),
         });
       } catch (err) {
-        setFeedback({ type: 'error', message: `导入失败: ${err instanceof Error ? err.message : String(err)}` });
+        setFeedback({ type: 'error', message: t('wizard.feedback.importFailed', { error: err instanceof Error ? err.message : String(err) }) });
       }
     },
     [gtInputDir, importedFiles],
@@ -138,7 +146,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
       if (payload?.type !== 'drop') return;
       const paths = Array.isArray(payload.paths) ? payload.paths : [];
       if (paths.length === 0) {
-        setFeedback({ type: 'error', message: '未能读取拖拽文件路径，请改用“选择文件”导入。' });
+        setFeedback({ type: 'error', message: t('wizard.feedback.dropPathMissing') });
         return;
       }
       void importPathsToInput(paths);
@@ -175,7 +183,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   const handleCreateProject = useCallback(async () => {
     if (!projectDir) {
-      setFeedback({ type: 'error', message: '请选择目录并输入项目名称' });
+      setFeedback({ type: 'error', message: t('wizard.feedback.projectInfoRequired') });
       return;
     }
     try {
@@ -187,9 +195,9 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
       await invoke('create_dir', { path: `${projectDir}${sep}transl_cache` });
       await invoke('write_text_file', { path: `${projectDir}${sep}config.yaml`, content: configYaml });
       setProjectCreated(true);
-      setFeedback({ type: 'success', message: '项目创建成功！' });
+      setFeedback({ type: 'success', message: t('wizard.feedback.projectCreated') });
     } catch (err) {
-      setFeedback({ type: 'error', message: `创建失败: ${err instanceof Error ? err.message : String(err)}` });
+      setFeedback({ type: 'error', message: t('wizard.feedback.createFailed', { error: err instanceof Error ? err.message : String(err) }) });
     }
   }, [projectDir]);
 
@@ -232,7 +240,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
       const droppedPaths = directPaths.length > 0 ? directPaths : parseDroppedUriList();
       if (droppedPaths.length === 0) {
-        setFeedback({ type: 'error', message: '未能读取拖拽文件路径，请改用“选择文件”导入。' });
+        setFeedback({ type: 'error', message: t('wizard.feedback.dropPathMissing') });
         return;
       }
       await importPathsToInput(droppedPaths);
@@ -253,7 +261,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     try {
       await invoke('open_folder', { path: gtInputDir });
     } catch (err) {
-      setFeedback({ type: 'error', message: `打开输入文件夹失败: ${err instanceof Error ? err.message : String(err)}` });
+      setFeedback({ type: 'error', message: t('wizard.feedback.openInputFailed', { error: err instanceof Error ? err.message : String(err) }) });
     }
   }, [gtInputDir]);
 
@@ -340,9 +348,9 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
       setSelectedBackendProfile(projectDir, selectedBackend);
 
       setSettingsSaved(true);
-      setFeedback({ type: 'success', message: '设置已保存' });
+      setFeedback({ type: 'success', message: t('wizard.feedback.settingsSaved') });
     } catch (err) {
-      setFeedback({ type: 'error', message: `保存失败: ${err instanceof Error ? err.message : String(err)}` });
+      setFeedback({ type: 'error', message: t('wizard.feedback.saveFailed', { error: err instanceof Error ? err.message : String(err) }) });
     }
   }, [projectDir, workersPerProject, language, numPerRequest, dynamicNumPerRequest, dynamicNumPerRequestMin, dynamicNumPerRequestMax, selectedFilePlugin, selectedBackend, translationGuideline]);
 
@@ -353,7 +361,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     // 空输入目录：不提交 dump-name 任务，直接给出友好提示
     if (importedFiles.length === 0) {
       setNameJobStatus('completed');
-      setNameJobMessage('gt_input 中没有文件，已跳过人名提取。可返回上一步导入文件，或稍后手动添加。');
+      setNameJobMessage(t('wizard.names.emptyInput'));
       return;
     }
 
@@ -371,10 +379,10 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
             const status = await fetchJob(job.job_id);
             if (status.status === 'completed') {
               setNameJobStatus('completed');
-              setNameJobMessage(status.success ? '人名提取完成！' : `提取完成但有警告: ${status.error || ''}`);
+              setNameJobMessage(status.success ? t('wizard.names.completed') : t('wizard.names.completedWithWarning', { error: status.error || '' }));
             } else if (status.status === 'failed') {
               setNameJobStatus('failed');
-              setNameJobMessage(status.error || '提取失败');
+              setNameJobMessage(status.error || t('wizard.names.failed'));
             } else {
               setTimeout(poll, 2000);
             }
@@ -409,8 +417,8 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   }, [currentStep, projectCreated, settingsSaved]);
 
   const stepProgress = useMemo(
-    () => Math.round(((currentStep + 1) / STEPS.length) * 100),
-    [currentStep],
+    () => Math.round(((currentStep + 1) / stepLabels.length) * 100),
+    [currentStep, stepLabels.length],
   );
 
   useEffect(() => {
@@ -421,7 +429,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   // ── Step indicator ──
   const renderStepIndicator = () => (
     <ul className="wizard-steps">
-      {STEPS.map((label, i) => (
+      {stepLabels.map((label, i) => (
         <li
           key={i}
           className={`wizard-step${i === currentStep ? ' wizard-step--active' : ''}${i < currentStep ? ' wizard-step--completed' : ''}`}
@@ -435,43 +443,43 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   // ── Step 1 ──
   const renderStep1 = () => (
-    <Panel title="项目位置" description="选择项目文件夹的保存位置和项目名称，然后创建项目结构。">
+    <Panel title={t('wizard.location.title')} description={t('wizard.location.description')}>
       <div className="wizard-form-grid">
         <div className="field">
-          <span className="field__label">父目录</span>
+          <span className="field__label">{t('wizard.location.parentDir')}</span>
           <div className="field__row">
             <input
               className="field__input"
               autoComplete="off"
               value={parentDir}
               onChange={(e) => { setParentDir(e.target.value); setProjectCreated(false); }}
-              placeholder="例如：E:\GalTransl\projects"
+              placeholder={t('wizard.location.parentDirPlaceholder')}
             />
             <Button className="field__browse-button" variant="secondary" onClick={() => void handleSelectParentDir()}>
-              浏览
+              {t('common.browse')}
             </Button>
           </div>
-          <span className="field__hint">建议选择英文路径，避免空格与特殊字符。</span>
+          <span className="field__hint">{t('wizard.location.pathHint')}</span>
         </div>
         <div className="field">
-          <span className="field__label">项目名称</span>
+          <span className="field__label">{t('wizard.location.projectName')}</span>
           <input
             className="field__input"
             autoComplete="off"
             value={projectName}
             onChange={(e) => { setProjectName(e.target.value); setProjectCreated(false); }}
-            placeholder="例如：MyProject"
+            placeholder={t('wizard.location.projectNamePlaceholder')}
           />
         </div>
         <div className="wizard-path-preview">
-          <span className="wizard-path-preview__label">将创建目录</span>
-          <code className="wizard-path-preview__path">{projectDir || '请先填写父目录与项目名称'}</code>
-          <div className="wizard-path-preview__meta">包含 `gt_input` / `gt_output` / `transl_cache` 与 `config.yaml`</div>
+          <span className="wizard-path-preview__label">{t('wizard.location.createDir')}</span>
+          <code className="wizard-path-preview__path">{projectDir || t('wizard.location.fillRequired')}</code>
+          <div className="wizard-path-preview__meta">{t('wizard.location.includes')}</div>
         </div>
       </div>
       <div className="wizard-actions">
         <Button disabled={projectCreated || !parentDir || !projectName} onClick={() => void handleCreateProject()}>
-          {projectCreated ? '已创建 ✓' : '创建项目'}
+          {projectCreated ? t('wizard.location.created') : t('common.createProject')}
         </Button>
       </div>
     </Panel>
@@ -479,7 +487,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   // ── Step 2 ──
   const renderStep2 = () => (
-    <Panel title="导入文件" description="将待翻译的文件导入到项目的 gt_input 目录中，也可以跳过此步骤稍后手动添加。">
+    <Panel title={t('wizard.import.title')} description={t('wizard.import.description')}>
       <div
         className="drop-zone"
         onDragOver={(e) => {
@@ -490,15 +498,15 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         onDrop={(e) => void handleFileDrop(e)}
       >
         <div className="drop-zone__icon">📁</div>
-        <div className="drop-zone__text">拖放文件到此处导入</div>
+        <div className="drop-zone__text">{t('wizard.import.drop')}</div>
       </div>
       <div className="wizard-actions">
-        <Button variant="secondary" onClick={() => void handleFilePick()}>选择文件</Button>
-        <Button variant="secondary" onClick={() => void handleOpenInputFolder()} disabled={!gtInputDir}>打开输入文件夹</Button>
+        <Button variant="secondary" onClick={() => void handleFilePick()}>{t('wizard.import.chooseFiles')}</Button>
+        <Button variant="secondary" onClick={() => void handleOpenInputFolder()} disabled={!gtInputDir}>{t('wizard.import.openInputFolder')}</Button>
       </div>
       <div className="wizard-tip-card">
-        <strong>导入提示</strong>
-        <span>支持拖拽多个文件；若暂时跳过，可后续手动复制到 `gt_input` 目录。</span>
+        <strong>{t('wizard.import.tipTitle')}</strong>
+        <span>{t('wizard.import.tip')}</span>
       </div>
       {importedFiles.length > 0 && (
         <ul className="wizard-file-list">
@@ -512,12 +520,12 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   // ── Step 3 ──
   const renderStep3 = () => (
-    <Panel title="翻译后端" description="选择翻译后端配置，也可以跳过此步骤在配置编辑中设置。">
+    <Panel title={t('wizard.backend.title')} description={t('wizard.backend.description')}>
       <div className="field">
-        <span className="field__label">后端配置</span>
+        <span className="field__label">{t('wizard.backend.profile')}</span>
         <CustomSelect value={selectedBackend} onChange={(e) => setSelectedBackend(e.target.value)}>
-          <option value="__default__">跟随全局默认</option>
-          <option value="">不使用（使用项目自身配置）</option>
+          <option value="__default__">{t('wizard.backend.followDefault')}</option>
+          <option value="">{t('wizard.backend.useProjectConfig')}</option>
           {backendProfileNames.map((name) => (
             <option key={name} value={name}>{name}</option>
           ))}
@@ -525,26 +533,26 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         <span className="field__hint">
           {selectedBackend === '__default__'
             ? defaultBackendName
-              ? `当前默认配置为「${defaultBackendName}」，可在「翻译后端配置」页面修改`
-              : '尚未设置默认配置，请在「翻译后端配置」页面设置'
+              ? t('wizard.backend.defaultConfigured', { name: defaultBackendName })
+              : t('wizard.backend.defaultMissing')
             : selectedBackend
-              ? `翻译时将使用全局配置「${selectedBackend}」覆盖项目后端设置`
-              : '将忽略全局配置，使用项目自身后端设置'}
+              ? t('wizard.backend.profileSelected', { name: selectedBackend })
+              : t('wizard.backend.projectConfigSelected')}
         </span>
       </div>
       <div className="wizard-tip-card">
-        <strong>推荐策略</strong>
-        <span>如果没有翻译后端可以先去翻译后端配置设置中新建。</span>
+        <strong>{t('wizard.backend.strategyTitle')}</strong>
+        <span>{t('wizard.backend.strategy')}</span>
       </div>
     </Panel>
   );
 
   // ── Step 4 ──
   const renderStep4 = () => (
-    <Panel title="常用设置" description="设置项目的基本翻译参数。">
+    <Panel title={t('wizard.settings.title')} description={t('wizard.settings.description')}>
       <div className="wizard-settings-grid">
       <div className="field wizard-settings-grid__full">
-        <span className="field__label">文件插件</span>
+        <span className="field__label">{t('wizard.settings.filePlugin')}</span>
         <CustomSelect value={selectedFilePlugin} onChange={(e) => setSelectedFilePlugin(e.target.value)}>
           {filePlugins.length > 0 ? (
             filePlugins.map((p) => (
@@ -554,10 +562,10 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
             <option value={selectedFilePlugin}>{selectedFilePlugin}</option>
           )}
         </CustomSelect>
-        <span className="field__hint">用于识别与解析源文件格式。</span>
+        <span className="field__hint">{t('wizard.settings.filePluginHint')}</span>
       </div>
       <div className="field">
-        <span className="field__label">并发文件数</span>
+        <span className="field__label">{t('wizard.settings.workers')}</span>
         <input
           className="field__input"
           type="number"
@@ -565,10 +573,10 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
           value={workersPerProject}
           onChange={(e) => setWorkersPerProject(Number(e.target.value))}
         />
-        <span className="field__hint">并发越高速度越快，但更吃资源。</span>
+        <span className="field__hint">{t('wizard.settings.workersHint')}</span>
       </div>
       <div className="field">
-        <span className="field__label">单次翻译句数</span>
+        <span className="field__label">{t('wizard.settings.numPerRequest')}</span>
         <input
           className="field__input"
           type="number"
@@ -576,18 +584,18 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
           value={numPerRequest}
           onChange={(e) => setNumPerRequest(Number(e.target.value))}
         />
-        <span className="field__hint">建议 8~20，兼顾质量和成本。</span>
+        <span className="field__hint">{t('wizard.settings.numPerRequestHint')}</span>
       </div>
       <div className="field">
-        <span className="field__label">动态句数调整</span>
+        <span className="field__label">{t('wizard.settings.dynamicNum')}</span>
         <CustomSelect value={String(dynamicNumPerRequest)} onChange={(e) => setDynamicNumPerRequest(e.target.value === 'true')}>
-          <option value="false">关闭</option>
-          <option value="true">开启</option>
+          <option value="false">{t('wizard.settings.off')}</option>
+          <option value="true">{t('wizard.settings.on')}</option>
         </CustomSelect>
-        <span className="field__hint">根据解析错误自动降低句数，稳定后逐步提升。</span>
+        <span className="field__hint">{t('wizard.settings.dynamicNumHint')}</span>
       </div>
       <div className="field">
-        <span className="field__label">动态最小句数</span>
+        <span className="field__label">{t('wizard.settings.dynamicMin')}</span>
         <input
           className="field__input"
           type="number"
@@ -597,7 +605,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         />
       </div>
       <div className="field">
-        <span className="field__label">动态最大句数</span>
+        <span className="field__label">{t('wizard.settings.dynamicMax')}</span>
         <input
           className="field__input"
           type="number"
@@ -607,23 +615,23 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         />
       </div>
       <div className="field wizard-settings-grid__full">
-        <span className="field__label">目标语言</span>
+        <span className="field__label">{t('wizard.settings.targetLanguage')}</span>
         <CustomSelect value={language} onChange={(e) => setLanguage(e.target.value)}>
-          <option value="zh-cn">简体中文</option>
-          <option value="zh-tw">繁体中文</option>
+          <option value="zh-cn">{t('wizard.settings.lang.zhCn')}</option>
+          <option value="zh-tw">{t('wizard.settings.lang.zhTw')}</option>
           <option value="en">English</option>
-          <option value="ja">日本語</option>
-          <option value="ko">한국어</option>
+          <option value="ja">Japanese</option>
+          <option value="ko">Korean</option>
         </CustomSelect>
       </div>
       <div className="field wizard-settings-grid__full">
-        <span className="field__label">翻译规范</span>
+        <span className="field__label">{t('wizard.settings.guideline')}</span>
         <CustomSelect
           value={translationGuideline}
           onChange={(e) => setTranslationGuideline(e.target.value)}
         >
           {guidelines.length === 0 && translationGuideline === '' ? (
-            <option value="">（未找到翻译规范文件）</option>
+            <option value="">{t('wizard.settings.noGuidelines')}</option>
           ) : null}
           {translationGuideline && !guidelines.includes(translationGuideline) ? (
             <option value={translationGuideline}>{translationGuideline}</option>
@@ -632,12 +640,12 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
             <option key={g} value={g}>{g}</option>
           ))}
         </CustomSelect>
-        <span className="field__hint">选择使用的翻译规范文件（位于 translation_guidelines 文件夹），高端模型日译中推荐"增强"规范</span>
+        <span className="field__hint">{t('wizard.settings.guidelineHint')}</span>
       </div>
       </div>
       <div className="wizard-actions">
         <Button disabled={settingsSaved} onClick={() => void handleSaveSettings()}>
-          {settingsSaved ? '已保存 ✓' : '保存设置'}
+          {settingsSaved ? t('wizard.settings.saved') : t('wizard.settings.save')}
         </Button>
       </div>
     </Panel>
@@ -645,25 +653,25 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   // ── Step 5 ──
   const renderStep5 = () => (
-    <Panel title="提取人名" description="自动从项目文件中提取人名表。">
+    <Panel title={t('wizard.names.title')} description={t('wizard.names.description')}>
       {nameJobStatus === 'running' && (
         <div className="wizard-progress">
           <div className="wizard-progress__bar">
             <div className="wizard-progress__fill" />
           </div>
-          <div className="wizard-progress__text">正在提取人名...</div>
+          <div className="wizard-progress__text">{t('wizard.names.extracting')}</div>
         </div>
       )}
       {nameJobStatus === 'completed' && (
         <div className="wizard-message wizard-message--success">
           {nameJobMessage}
           <br />
-          <span className="wizard-message__hint">可在项目的「人名翻译」菜单中使用 AI 翻译人名。</span>
+          <span className="wizard-message__hint">{t('wizard.names.hint')}</span>
         </div>
       )}
       {nameJobStatus === 'failed' && (
         <div className="wizard-message wizard-message--error">
-          提取失败: {nameJobMessage}
+          {t('wizard.names.errorPrefix', { error: nameJobMessage })}
         </div>
       )}
     </Panel>
@@ -678,21 +686,21 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
 
   const handleNextStep = useCallback(() => {
     setStepDirection('forward');
-    setCurrentStep((s) => Math.min(STEPS.length - 1, s + 1));
-  }, []);
+    setCurrentStep((s) => Math.min(stepLabels.length - 1, s + 1));
+  }, [stepLabels.length]);
 
   return (
     <div className="wizard-page">
       <PageHeader
-        title="新建项目"
-        description="按照向导创建一个新的翻译项目。"
+        title={t('wizard.page.title')}
+        description={t('wizard.page.description')}
       />
       {renderStepIndicator()}
       <div className="wizard-content">
         <div className="wizard-step-summary">
           <div className="wizard-step-summary__top">
-            <span>第 {currentStep + 1} / {STEPS.length} 步</span>
-            <strong>{STEPS[currentStep]}</strong>
+            <span>{t('wizard.page.stepCount', { current: currentStep + 1, total: stepLabels.length })}</span>
+            <strong>{stepLabels[currentStep]}</strong>
           </div>
           <div className="wizard-step-summary__bar">
             <span style={{ width: `${stepProgress}%` }} />
@@ -705,15 +713,15 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
       </div>
       <div className="wizard-nav">
         <Button variant="secondary" onClick={handlePrevStep} disabled={currentStep === 0}>
-          上一步
+          {t('common.previous')}
         </Button>
         {currentStep < 4 ? (
           <Button onClick={handleNextStep} disabled={!canNext}>
-            下一步
+            {t('common.next')}
           </Button>
         ) : (
           <Button onClick={handleFinish}>
-            完成并打开项目
+            {t('wizard.nav.finish')}
           </Button>
         )}
       </div>

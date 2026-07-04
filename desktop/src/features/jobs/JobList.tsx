@@ -3,6 +3,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Panel } from '../../components/Panel';
 import { InlineFeedback } from '../../components/page-state/InlineFeedback';
 import type { Job } from '../../lib/api';
+import { t } from '../../i18n';
 import { JobCard } from './JobCard';
 
 type JobListProps = {
@@ -16,22 +17,22 @@ type JobListProps = {
 export function JobList({ jobs, jobsError, loading, onRefresh, refreshing }: JobListProps) {
   return (
     <Panel
-      title="Jobs"
-      description="展示全部本地任务，运行中的任务会通过轮询自动更新状态与错误信息。"
+      title={t('jobs.title')}
+      description={t('jobs.description')}
       actions={
         <Button disabled={refreshing} onClick={onRefresh} variant="secondary">
-          {refreshing ? '刷新中…' : '刷新列表'}
+          {refreshing ? t('jobs.refreshing') : t('jobs.refreshList')}
         </Button>
       }
     >
-      {jobsError ? <InlineFeedback tone="error" title="加载任务失败" description={jobsError} /> : null}
+      {jobsError ? <InlineFeedback tone="error" title={t('jobs.loadFailed')} description={jobsError} /> : null}
 
-      {loading ? <EmptyState title="正在载入任务" description="正在请求后端任务列表，请稍候。" /> : null}
+      {loading ? <EmptyState title={t('jobs.loadingTitle')} description={t('jobs.loadingDescription')} /> : null}
 
       {!loading && jobs.length === 0 ? (
         <EmptyState
-          title="还没有任务"
-          description="先在左侧选择翻译模板并提交一个本地项目，任务状态会显示在这里。"
+          title={t('jobs.emptyTitle')}
+          description={t('jobs.emptyDescription')}
         />
       ) : null}
 

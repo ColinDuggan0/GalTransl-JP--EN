@@ -2,6 +2,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import type { Job } from '../../lib/api';
 import { toDisplayError } from '../../lib/errors';
 import { formatJobResult, formatTimestamp } from '../../lib/format';
+import { t } from '../../i18n';
 
 type JobCardProgress = {
   currentFile?: string;
@@ -57,7 +58,7 @@ export function JobCard({ job, progress }: JobCardProps) {
       {progress ? (
         <div className="job-card__progress">
           <div className="job-card__progress-meta">
-            <strong>任务进度</strong>
+            <strong>{t('jobs.progress')}</strong>
             <span>{progress.translated}/{progress.total} · {progress.percent}%</span>
           </div>
           <div className="progress-bar progress-bar--small">
@@ -65,7 +66,7 @@ export function JobCard({ job, progress }: JobCardProps) {
           </div>
           {progress.currentFile ? (
             <div className="job-card__progress-file" title={progress.currentFile}>
-              当前文件：{progress.currentFile}
+              {t('jobs.currentFile', { file: progress.currentFile })}
             </div>
           ) : null}
         </div>

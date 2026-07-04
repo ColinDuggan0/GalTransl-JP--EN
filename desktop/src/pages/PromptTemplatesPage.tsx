@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CustomSelect } from '../components/CustomSelect';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../components/page-state';
+import { t } from '../i18n';
 import {
   type PromptTemplateInfo,
   fetchPromptTemplates,
@@ -69,7 +70,7 @@ export function PromptTemplatesPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(normalizeError(err, '加载默认提示词失败'));
+          setError(normalizeError(err, t('prompts.errorLoad')));
         }
       })
       .finally(() => {
@@ -129,9 +130,9 @@ export function PromptTemplatesPage() {
             : tpl,
         ),
       );
-      setFeedback('保存成功，后续该模板新任务会使用新的 system/user 提示词。');
+      setFeedback(t('prompts.feedbackSaved'));
     } catch (err) {
-      setError(normalizeError(err, '保存默认提示词失败'));
+      setError(normalizeError(err, t('prompts.errorSave')));
     } finally {
       setSaving(false);
     }
@@ -162,9 +163,9 @@ export function PromptTemplatesPage() {
       );
       setSystemPromptValue(selectedTemplate.default_system_prompt);
       setUserPromptValue(selectedTemplate.default_user_prompt);
-      setFeedback('已重置为内置默认提示词。');
+      setFeedback(t('prompts.feedbackReset'));
     } catch (err) {
-      setError(normalizeError(err, '重置默认提示词失败'));
+      setError(normalizeError(err, t('prompts.errorReset')));
     } finally {
       setSaving(false);
     }
@@ -174,29 +175,29 @@ export function PromptTemplatesPage() {
     <div className="prompt-templates-page">
       <PageHeader
         className="prompt-templates-page__header"
-        title="默认提示词"
-        description="按翻译模板维护默认提示词。保存后，对应模板的新翻译任务会自动使用更新后的 system/user 提示词。"
+        title={t('prompts.title')}
+        description={t('prompts.description')}
       />
 
       <div className="prompt-templates-page__content">
         <section className="panel">
           <header className="panel__header">
             <div>
-              <h2>模板编辑器</h2>
-              <p>可独立修改每个翻译模板的 system prompt 与 user prompt，并支持一键恢复内置默认。</p>
+              <h2>{t('prompts.editorTitle')}</h2>
+              <p>{t('prompts.editorDescription')}</p>
             </div>
           </header>
 
           {loading ? (
-            <LoadingState title="加载中…" description="正在获取当前可编辑的翻译模板提示词。" />
+            <LoadingState title={t('prompts.loadingTitle')} description={t('prompts.loadingDescription')} />
           ) : error ? (
-            <ErrorState title="加载失败" description={error} />
+            <ErrorState title={t('prompts.loadFailed')} description={error} />
           ) : templates.length === 0 ? (
-            <EmptyState title="暂无可编辑模板" description="当前后端未返回可编辑的翻译模板提示词。" />
+            <EmptyState title={t('prompts.emptyTitle')} description={t('prompts.emptyDescription')} />
           ) : (
             <>
               <label className="settings-number-row">
-                <span className="settings-number-row__label">翻译模板</span>
+                <span className="settings-number-row__label">{t('prompts.templateLabel')}</span>
                 <div className="settings-number-row__control prompt-templates-page__select">
                   <CustomSelect
                     value={selectedName}
@@ -224,7 +225,7 @@ export function PromptTemplatesPage() {
                         void handleSave();
                       }}
                     >
-                      {saving ? '保存中…' : '保存修改'}
+                      {saving ? t('prompts.saving') : t('prompts.saveChanges')}
                     </button>
                     <button
                       type="button"
@@ -234,7 +235,7 @@ export function PromptTemplatesPage() {
                         void handleReset();
                       }}
                     >
-                      重置为默认提示词
+                      {t('prompts.resetDefault')}
                     </button>
                     <button
                       type="button"
@@ -244,7 +245,7 @@ export function PromptTemplatesPage() {
                         navigate('/settings');
                       }}
                     >
-                      返回设置
+                      {t('prompts.backToSettings')}
                     </button>
                   </div>
 
@@ -269,25 +270,25 @@ export function PromptTemplatesPage() {
                   />
 
                   <div className="prompt-templates-page__placeholder-help">
-                    <div className="prompt-templates-page__placeholder-help-title">占位符说明</div>
+                    <div className="prompt-templates-page__placeholder-help-title">{t('prompts.placeholderHelpTitle')}</div>
                     <ul>
-                      <li><code>[SourceLang]</code>：源语言名称。</li>
-                      <li><code>[TargetLang]</code>：目标语言名称。</li>
-                      <li><code>[translation_guideline]</code>：当前翻译规范内容。</li>
-                      <li><code>[Glossary]</code>：本批次术语表提示词。</li>
-                      <li><code>[Input]</code>：本批次待翻译原文内容。</li>
-                      <li><code>[history_result]</code>：上下文历史翻译结果（无则为 None）。</li>
+                      <li><code>[SourceLang]</code>: {t('prompts.placeholder.sourceLang')}</li>
+                      <li><code>[TargetLang]</code>: {t('prompts.placeholder.targetLang')}</li>
+                      <li><code>[translation_guideline]</code>: {t('prompts.placeholder.guideline')}</li>
+                      <li><code>[Glossary]</code>: {t('prompts.placeholder.glossary')}</li>
+                      <li><code>[Input]</code>: {t('prompts.placeholder.input')}</li>
+                      <li><code>[history_result]</code>: {t('prompts.placeholder.history')}</li>
                     </ul>
                   </div>
 
                   <div className="prompt-templates-page__meta">
                     <span>
-                      {selectedTemplate.system_overridden ? 'System：已覆盖默认值' : 'System：使用内置默认值'}
+                      {selectedTemplate.system_overridden ? t('prompts.systemOverridden') : t('prompts.systemDefault')}
                     </span>
                     <span>
-                      {selectedTemplate.user_overridden ? 'User：已覆盖默认值' : 'User：使用内置默认值'}
+                      {selectedTemplate.user_overridden ? t('prompts.userOverridden') : t('prompts.userDefault')}
                     </span>
-                    <span>{hasUnsavedChanges ? '有未保存修改' : '内容已保存'}</span>
+                    <span>{hasUnsavedChanges ? t('prompts.unsaved') : t('prompts.saved')}</span>
                   </div>
                 </div>
               ) : null}

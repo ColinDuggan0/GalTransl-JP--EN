@@ -2,6 +2,7 @@ import { Panel } from '../../components/Panel';
 import { CustomSelect } from '../../components/CustomSelect';
 import { PluginSettingsEditor } from '../../components/PluginSettingsEditor';
 import type { PluginInfo } from '../../lib/api';
+import { t } from '../../i18n';
 
 interface PluginSettingsSectionProps {
   config: Record<string, unknown> | null;
@@ -21,11 +22,11 @@ export function PluginSettingsSection({
   onToggleTextPlugin,
 }: PluginSettingsSectionProps) {
   return (
-    <Panel title="插件设置" description="文件插件和文本插件配置。">
+    <Panel title={t('projectConfig.plugin.title')} description={t('projectConfig.plugin.description')}>
       <div className="config-form">
         {/* ── 文件插件 ── */}
         <div className="plugin-section">
-          <div className="plugin-section__title">文件插件</div>
+          <div className="plugin-section__title">{t('projectConfig.plugin.filePlugin')}</div>
           <label className="field">
             <CustomSelect
               value={String((config?.plugin as Record<string, unknown>)?.filePlugin ?? 'file_galtransl_json')}
@@ -43,7 +44,7 @@ export function PluginSettingsSection({
                 </option>
               )}
             </CustomSelect>
-            <span className="field__hint">从全局插件管理中获取可用文件插件</span>
+            <span className="field__hint">{t('projectConfig.plugin.filePluginHint')}</span>
           </label>
           {/* 文件插件设置项 */}
           {(() => {
@@ -63,7 +64,7 @@ export function PluginSettingsSection({
 
         {/* ── 文本插件 ── */}
         <div className="plugin-section">
-          <div className="plugin-section__title">文本插件</div>
+          <div className="plugin-section__title">{t('projectConfig.plugin.textPlugin')}</div>
           {textPlugins.length > 0 ? (
             <div className="plugin-check-list">
               {textPlugins.map((plugin) => {
@@ -112,7 +113,7 @@ export function PluginSettingsSection({
               })}
             </div>
           ) : (
-            <div className="plugin-check-empty">未找到可用的文本插件</div>
+            <div className="plugin-check-empty">{t('projectConfig.plugin.noTextPlugins')}</div>
           )}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Panel } from '../../components/Panel';
+import { t } from '../../i18n';
 
 interface RetranslKeySectionProps {
   config: Record<string, unknown> | null;
@@ -91,15 +92,15 @@ export function RetranslKeySection({ config, onChange, onDirty }: RetranslKeySec
 
   return (
     <Panel
-      title="重翻关键字"
-      description="原文、译文、问题中命中这些关键字的句子会在下次启动时被重翻。"
+      title={t('projectConfig.retransl.title')}
+      description={t('projectConfig.retransl.description')}
     >
       <div className="retransl-key-section">
         <div className="retransl-key-section__add">
           <input
             type="text"
             className="retransl-key-section__input"
-            placeholder="输入关键字后按回车或点击添加"
+            placeholder={t('projectConfig.retransl.placeholder')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -115,13 +116,13 @@ export function RetranslKeySection({ config, onChange, onDirty }: RetranslKeySec
             onClick={handleAdd}
             disabled={!draft.trim()}
           >
-            添加
+            {t('common.add')}
           </button>
         </div>
 
         {keys.length === 0 ? (
           <div className="retransl-key-section__empty">
-            暂无重翻关键字。添加后，下次启动时命中这些关键字的句子会被重新翻译。
+            {t('projectConfig.retransl.empty')}
           </div>
         ) : (
           <ul className="retransl-key-section__list">
@@ -162,14 +163,14 @@ export function RetranslKeySection({ config, onChange, onDirty }: RetranslKeySec
                           onClick={handleSaveEdit}
                           disabled={!editingDraft.trim()}
                         >
-                          保存
+                          {t('common.save')}
                         </button>
                         <button
                           type="button"
                           className="retransl-key-section__btn retransl-key-section__btn--ghost"
                           onClick={handleCancelEdit}
                         >
-                          取消
+                          {t('common.cancel')}
                         </button>
                       </>
                     ) : (
@@ -178,17 +179,17 @@ export function RetranslKeySection({ config, onChange, onDirty }: RetranslKeySec
                           type="button"
                           className="retransl-key-section__btn retransl-key-section__btn--ghost"
                           onClick={() => handleStartEdit(idx)}
-                          title="编辑"
+                          title={t('common.edit')}
                         >
-                          编辑
+                          {t('common.edit')}
                         </button>
                         <button
                           type="button"
                           className="retransl-key-section__btn retransl-key-section__btn--danger"
                           onClick={() => handleDelete(idx)}
-                          title="删除"
+                          title={t('common.delete')}
                         >
-                          删除
+                          {t('common.delete')}
                         </button>
                       </>
                     )}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { speakerStyle } from '../lib/speaker';
 import { resolveSpeakerName } from '../lib/useNameDict';
 import { toDisplayError } from '../lib/errors';
+import { getLocale, t } from '../i18n';
 import type {
   FileProgress,
   Job,
@@ -58,7 +59,7 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
       <div className="runtime-event__header">
         <div className="runtime-event__badges">
           <span className="runtime-event__pill runtime-event__pill--danger">{kindLabel}</span>
-          {(entry.retry_count ?? 0) > 0 ? <span className="runtime-event__pill">重试 {entry.retry_count}</span> : null}
+          {(entry.retry_count ?? 0) > 0 ? <span className="runtime-event__pill">{t('runtime.retryCount', { count: entry.retry_count ?? 0 })}</span> : null}
         </div>
         <div className="runtime-event__header-right">
           <div className="runtime-event__error-time-action">
@@ -68,8 +69,8 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
               className={`icon-btn runtime-event__copy-btn runtime-event__time-copy${copied ? ' runtime-event__copy-btn--copied' : ''}`}
               onClick={() => void handleCopyMessage()}
               disabled={!messageText}
-              title={!messageText ? '无可复制内容' : (copied ? '已复制' : '复制错误信息')}
-              aria-label={!messageText ? '无可复制内容' : '复制错误信息'}
+              title={!messageText ? t('runtime.noCopyContent') : (copied ? t('runtime.copied') : t('runtime.copyError'))}
+              aria-label={!messageText ? t('runtime.noCopyContent') : t('runtime.copyError')}
             >
               {copied ? (
                 <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
@@ -90,7 +91,7 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
         className="runtime-event__message"
         title={isMessageTruncated && displayMessageText ? displayMessageText : undefined}
       >
-        {displayMessageText || '未提供错误详情。'}
+        {displayMessageText || t('runtime.noErrorDetails')}
       </p>
       <dl className="runtime-event__meta">
         {entry.kind !== 'api' && (
@@ -101,7 +102,7 @@ export function RuntimeErrorRow({ entry }: { entry: ProjectRuntimeErrorEntry }) 
         <div className="runtime-event__meta-model">
           <dd>{modelLabel || '—'}</dd>
         </div>
-        {(entry.sleep_seconds ?? 0) > 0 ? <span className="runtime-event__pill">退避 {Number(entry.sleep_seconds).toFixed(3)}s</span> : null}
+        {(entry.sleep_seconds ?? 0) > 0 ? <span className="runtime-event__pill">{t('runtime.backoffSeconds', { seconds: Number(entry.sleep_seconds).toFixed(3) })}</span> : null}
       </dl>
     </article>
   );
@@ -126,7 +127,7 @@ export function RuntimeSuccessRow({
         : resolveSpeakerName(rawSpeakerLabel, nameDict))
     : rawSpeakerLabel;
   const speakerStyleVal = rawSpeakerLabel ? speakerStyle(rawSpeakerLabel) : undefined;
-  const entryFilename = entry.filename || '未命名文件';
+  const entryFilename = entry.filename || t('runtime.unnamedFile');
   const filterFilename = entry.filename;
   const translatorLabel = compactModelLabel(entry.trans_by);
 
@@ -141,11 +142,11 @@ export function RuntimeSuccessRow({
           >
             {filterFilename ? (
               <button
-                aria-label="筛选句流"
+                aria-label={t('runtime.filterSuccessStream')}
                 aria-pressed={isSuccessFileFilterActive}
                 className="runtime-event__file-name-btn"
                 onClick={() => onToggleSuccessFileFilter(filterFilename)}
-                title="筛选句流"
+                title={t('runtime.filterSuccessStream')}
                 type="button"
               >
                 {entryFilename}
@@ -195,23 +196,23 @@ export function FileProgressRow({
           <span className="file-progress-row__name-wrap">
             <span className="file-progress-row__name">{file.filename}</span>
             <button
-              aria-label="筛选句流"
+              aria-label={t('runtime.filterSuccessStream')}
               aria-pressed={isSuccessFileFilterActive}
               className={`file-progress-row__filter-toggle${isSuccessFileFilterActive ? ' file-progress-row__filter-toggle--active' : ''}`}
               onClick={() => onToggleSuccessFileFilter(file.filename)}
-              title="筛选句流"
+              title={t('runtime.filterSuccessStream')}
               type="button"
             >
               <FilterFunnelIcon className="file-progress-row__filter-icon" />
-              <span className="file-progress-row__filter-tooltip">筛选句流</span>
+              <span className="file-progress-row__filter-tooltip">{t('runtime.filterSuccessStream')}</span>
               {isSuccessFileFilterActive ? <span className="file-progress-row__filter-check">✓</span> : null}
             </button>
           </span>
-          <span className="file-progress-row__state">{isComplete ? '已完成' : percent > 0 ? '处理中' : '排队中'}</span>
+          <span className="file-progress-row__state">{isComplete ? t('runtime.file.completed') : percent > 0 ? t('runtime.file.processing') : t('runtime.file.queued')}</span>
         </div>
         <span className="file-progress-row__count">
           {file.translated}/{file.total}
-          {hasFailed ? <span className="file-progress-row__failed"> · {file.failed}失败</span> : null}
+          {hasFailed ? <span className="file-progress-row__failed"> · {t('runtime.file.failedCount', { count: file.failed })}</span> : null}
         </span>
       </div>
       <div className="progress-bar progress-bar--small">
@@ -246,24 +247,24 @@ export function toRuntimeJob(job: Job): RuntimeJob {
 export function getStatusLabel(status?: RuntimeJob['status']) {
   switch (status) {
     case 'running':
-      return '翻译中';
+      return t('runtime.status.running');
     case 'pending':
-      return '等待中';
+      return t('runtime.status.pending');
     case 'completed':
-      return '已完成';
+      return t('runtime.status.completed');
     case 'failed':
-      return '失败';
+      return t('runtime.status.failed');
     case 'cancelled':
-      return '已取消';
+      return t('runtime.status.cancelled');
     default:
-      return '空闲';
+      return t('runtime.status.idle');
   }
 }
 
 export function getErrorKindLabel(kind: string): string {
   const normalized = (kind || '').trim().toLowerCase();
-  if (normalized === 'parse') return '解析';
-  if (normalized === 'api') return '后端';
+  if (normalized === 'parse') return t('runtime.errorKind.parse');
+  if (normalized === 'api') return t('runtime.errorKind.api');
   return kind || 'error';
 }
 
@@ -306,7 +307,7 @@ export function formatDate(isoString: string): string {
   if (!isoString) return '—';
   try {
     const date = new Date(isoString);
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(getLocale(), {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -321,7 +322,7 @@ export function formatDate(isoString: string): string {
 export function formatTime(isoString: string): string {
   if (!isoString) return '—';
   try {
-    return new Date(isoString).toLocaleTimeString('zh-CN', {
+    return new Date(isoString).toLocaleTimeString(getLocale(), {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit' });
@@ -331,22 +332,22 @@ export function formatTime(isoString: string): string {
 }
 
 export function formatSpeed(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return '0 行/分';
-  return `${value.toFixed(value >= 10 ? 0 : 1)} 行/分`;
+  if (!Number.isFinite(value) || value <= 0) return t('runtime.speed.zero');
+  return t('runtime.speed.linesPerMinute', { value: value.toFixed(value >= 10 ? 0 : 1) });
 }
 
 export function formatEta(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '—';
-  if (seconds < 60) return `${Math.round(seconds)} 秒`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)} 分`;
+  if (seconds < 60) return t('runtime.duration.seconds', { count: Math.round(seconds) });
+  if (seconds < 3600) return t('runtime.duration.minutes', { count: Math.round(seconds / 60) });
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.round((seconds % 3600) / 60);
-  return `${hours} 时 ${minutes} 分`;
+  return t('runtime.duration.hoursMinutes', { hours, minutes });
 }
 
 export function formatElapsedTime(job: RuntimeJob | null, nowMs: number): string {
   if (!job?.started_at) {
-    return job?.status === 'pending' ? '等待开始' : '—';
+    return job?.status === 'pending' ? t('runtime.waitingStart') : '—';
   }
 
   const startMs = Date.parse(job.started_at);
@@ -356,16 +357,16 @@ export function formatElapsedTime(job: RuntimeJob | null, nowMs: number): string
   const safeEndMs = Number.isNaN(endMs) ? nowMs : endMs;
   const elapsedSeconds = Math.max(0, Math.floor((safeEndMs - startMs) / 1000));
 
-  if (elapsedSeconds < 60) return `${elapsedSeconds} 秒`;
+  if (elapsedSeconds < 60) return t('runtime.duration.seconds', { count: elapsedSeconds });
   if (elapsedSeconds < 3600) {
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = elapsedSeconds % 60;
-    return `${minutes} 分 ${seconds} 秒`;
+    return t('runtime.elapsed.minutesSeconds', { minutes, seconds });
   }
 
   const hours = Math.floor(elapsedSeconds / 3600);
   const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-  return `${hours} 时 ${minutes} 分`;
+  return t('runtime.duration.hoursMinutes', { hours, minutes });
 }
 
 export function clampPercent(value: number): number {

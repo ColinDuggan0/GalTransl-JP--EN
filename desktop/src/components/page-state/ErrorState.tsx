@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { InlineFeedback } from './InlineFeedback';
+import { t } from '../../i18n';
 
 type ErrorStateProps = {
   title?: string;
@@ -9,7 +10,7 @@ type ErrorStateProps = {
 };
 
 export function ErrorState({
-  title = '加载失败',
+  title = t('common.loadFailed'),
   description,
   action,
   className,

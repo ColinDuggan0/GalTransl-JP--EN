@@ -5,6 +5,7 @@ import { Button } from './Button';
 import { Panel } from './Panel';
 import { EmptyState, ErrorState, InlineFeedback, LoadingState } from './page-state';
 import type { DictFileContent, DictionaryCategory } from '../lib/api';
+import { t } from '../i18n';
 
 type DictTab = DictionaryCategory;
 type DictRowType = 'normal' | 'conditional' | 'situation' | 'gpt' | 'comment' | 'blank';
@@ -110,22 +111,22 @@ function rowsToText(rows: DictRow[]): string {
 
 /** Column labels by tab & row type for the card's header pills */
 function getTypeLabel(type: DictRowType, tab: DictTab): string {
-  if (type === 'comment') return '注释';
-  if (type === 'blank') return '空行';
+  if (type === 'comment') return t('dictionary.type.comment');
+  if (type === 'blank') return t('dictionary.type.blank');
   if (type === 'gpt') return 'GPT';
-  if (type === 'normal') return '普通';
-  if (type === 'conditional') return '条件';
-  if (type === 'situation') return '场景';
+  if (type === 'normal') return t('dictionary.type.normal');
+  if (type === 'conditional') return t('dictionary.type.conditional');
+  if (type === 'situation') return t('dictionary.type.situation');
   return type;
 }
 
 /** Field labels for each row type */
 function getFieldLabels(type: DictRowType, _tab: DictTab): string[] {
-  if (type === 'gpt') return ['原文', '译文', '解释(可空)'];
-  if (type === 'normal') return ['搜索', '替换', '备注'];
-  if (type === 'conditional') return ['目标', '条件', '搜索', '替换', '备注'];
-  if (type === 'situation') return ['场景', '搜索', '替换'];
-  if (type === 'comment') return ['内容'];
+  if (type === 'gpt') return [t('dictionary.column.source'), t('dictionary.column.translation'), t('dictionary.column.explanationOptional')];
+  if (type === 'normal') return [t('dictionary.column.search'), t('dictionary.column.replace'), t('dictionary.column.note')];
+  if (type === 'conditional') return [t('dictionary.column.target'), t('dictionary.column.condition'), t('dictionary.column.search'), t('dictionary.column.replace'), t('dictionary.column.note')];
+  if (type === 'situation') return [t('dictionary.column.situation'), t('dictionary.column.search'), t('dictionary.column.replace')];
+  if (type === 'comment') return [t('dictionary.column.content')];
   return [];
 }
 
@@ -153,7 +154,7 @@ function DictEntryGroupCard({
           <span className={`dict-card__pill dict-card__pill--${group.type}`}>
             {getTypeLabel(group.type, tab)}
           </span>
-          <span className="dict-card__pill dict-card__pill--index">{group.items.length}条</span>
+          <span className="dict-card__pill dict-card__pill--index">{t('dictionary.itemCount', { count: group.items.length })}</span>
         </div>
       </div>
 
@@ -161,7 +162,7 @@ function DictEntryGroupCard({
         <div className="dict-card__table-head">
           <div className="dict-card__head-cell dict-card__head-cell--index">ID</div>
           {labels.map((label, ci) => (
-            <div key={ci} className="dict-card__head-cell">{label || `列${ci + 1}`}</div>
+            <div key={ci} className="dict-card__head-cell">{label || t('dictionary.column.generic', { index: ci + 1 })}</div>
           ))}
         </div>
 
@@ -174,7 +175,7 @@ function DictEntryGroupCard({
                   className="dict-card__input"
                   value={row.values[ci] ?? ''}
                   onChange={(e) => onCellChange(rowIndex, ci, e.target.value)}
-                  placeholder={label || `列${ci + 1}`}
+                  placeholder={label || t('dictionary.column.generic', { index: ci + 1 })}
                 />
               </div>
             ))}
@@ -182,7 +183,7 @@ function DictEntryGroupCard({
               type="button"
               className="dict-card__row-delete"
               onClick={() => onDelete(rowIndex)}
-              title="删除此条"
+              title={t('dictionary.deleteRow')}
             >
               ✕
             </button>
@@ -194,7 +195,7 @@ function DictEntryGroupCard({
             type="button"
             className="dict-card__add-row-btn"
             onClick={() => onAddRow(group.type, group.items[group.items.length - 1]?.rowIndex ?? -1)}
-            title="新增同类型条目"
+            title={t('dictionary.addSameType')}
           >
             +
           </button>
@@ -317,7 +318,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
   const handleRevealFile = async (file: string) => {
     const filePath = data?.dict_contents?.[file]?.path;
     if (!filePath) {
-      setLocalError(`无法定位字典文件「${stripProjectDirMarker(file)}」`);
+      setLocalError(t('dictionary.errorLocateFile', { file: stripProjectDirMarker(file) }));
       setInfo(null);
       return;
     }
@@ -327,7 +328,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
     try {
       await invoke('reveal_file', { path: filePath });
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : `在文件管理器中浏览失败: ${String(e)}`);
+      setLocalError(e instanceof Error ? e.message : t('dictionary.errorBrowse', { error: String(e) }));
     }
   };
 
@@ -339,7 +340,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
     try {
       await onGenerateGptDict();
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : '启动 AI 生成 GPT 字典任务失败');
+      setLocalError(e instanceof Error ? e.message : t('dictionary.errorStartGpt'));
     } finally {
       setGeneratingGptDict(false);
     }
@@ -374,7 +375,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
   }, [selectedFile, selectedContent, dirty, draftText]);
 
   const handleSelectFile = (file: string) => {
-    if (dirty && !confirm('当前文件有未保存改动，切换会丢失改动，是否继续？')) {
+    if (dirty && !confirm(t('dictionary.confirmUnsavedSwitchFile'))) {
       return;
     }
     setSelectedFile(file);
@@ -386,7 +387,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
   };
 
   const handleTabChange = (tab: DictTab) => {
-    if (dirty && !confirm('当前文件有未保存改动，切换分类会丢失改动，是否继续？')) {
+    if (dirty && !confirm(t('dictionary.confirmUnsavedSwitchCategory'))) {
       return;
     }
     setActiveTab(tab);
@@ -465,7 +466,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
           return !src || !dst;
         });
       if (invalidRow) {
-        setLocalError(`GPT字典第 ${invalidRow.index + 1} 行的原文和译文不能为空`);
+        setLocalError(t('dictionary.errorGptRequired', { row: invalidRow.index + 1 }));
         setInfo(null);
         return;
       }
@@ -476,10 +477,10 @@ export function DictionaryManager(props: DictionaryManagerProps) {
     try {
       await onSaveFile(selectedFile, draftText);
       setDirty(false);
-      setInfo('已保存');
+      setInfo(t('dictionary.saved'));
       await onReload();
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : '保存失败');
+      setLocalError(e instanceof Error ? e.message : t('dictionary.errorSave'));
     } finally {
       setSaving(false);
     }
@@ -488,7 +489,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
   const handleCreate = async () => {
     const raw = newFilename.trim();
     if (!raw) {
-      setLocalError('文件名不能为空');
+      setLocalError(t('dictionary.errorFileNameRequired'));
       return;
     }
     const name = /\.txt$/i.test(raw) ? raw : `${raw}.txt`;
@@ -500,9 +501,9 @@ export function DictionaryManager(props: DictionaryManagerProps) {
       setNewFilename('');
       setSelectedFile(createdFileKey);
       await onReload();
-      setInfo('已创建字典文件');
+      setInfo(t('dictionary.created'));
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : '创建失败');
+      setLocalError(e instanceof Error ? e.message : t('dictionary.errorCreate'));
     } finally {
       setCreating(false);
     }
@@ -510,7 +511,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
 
   const handleDelete = async () => {
     if (!selectedFile) return;
-    if (!confirm(`确定删除字典文件「${stripProjectDirMarker(selectedFile)}」？`)) return;
+    if (!confirm(t('dictionary.confirmDeleteFile', { file: stripProjectDirMarker(selectedFile) }))) return;
     setDeleting(true);
     setLocalError(null);
     setInfo(null);
@@ -518,9 +519,9 @@ export function DictionaryManager(props: DictionaryManagerProps) {
       await onDeleteFile(selectedFile);
       setDirty(false);
       await onReload();
-      setInfo('已删除字典文件');
+      setInfo(t('dictionary.deleted'));
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : '删除失败');
+      setLocalError(e instanceof Error ? e.message : t('dictionary.errorDelete'));
     } finally {
       setDeleting(false);
     }
@@ -530,7 +531,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
     return (
       <div className="project-dictionary-page">
         <div className="project-dictionary-page__header"><h1>{title}</h1></div>
-        <LoadingState title="加载字典中…" description="正在读取当前字典目录与文件内容。" />
+        <LoadingState title={t('dictionary.loadingTitle')} description={t('dictionary.loadingDescription')} />
       </div>
     );
   }
@@ -539,7 +540,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
     return (
       <div className="project-dictionary-page">
         <div className="project-dictionary-page__header"><h1>{title}</h1></div>
-        <ErrorState title="加载字典失败" description={error} />
+        <ErrorState title={t('dictionary.loadFailed')} description={error} />
       </div>
     );
   }
@@ -551,8 +552,8 @@ export function DictionaryManager(props: DictionaryManagerProps) {
         <p>{description}</p>
       </div>
 
-      {localError && <InlineFeedback tone="error" title="操作失败" description={localError} />}
-      {info && <InlineFeedback className="inline-alert--floating" tone="success" title="操作成功" description={info} />}
+      {localError && <InlineFeedback tone="error" title={t('common.operationFailed')} description={localError} />}
+      {info && <InlineFeedback className="inline-alert--floating" tone="success" title={t('common.success')} description={info} />}
 
       <div className="project-dictionary-page__content">
         <div className="dict-tabs">
@@ -563,7 +564,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
               type="button"
               onClick={() => handleTabChange(tab)}
             >
-              {tab === 'pre' ? '译前字典' : tab === 'gpt' ? 'GPT字典' : '译后字典'}
+              {tab === 'pre' ? t('dictionary.pre') : tab === 'gpt' ? t('dictionary.gpt') : t('dictionary.post')}
               <span className="dict-tab__count">{getFilesByTab(data, tab).length}</span>
             </button>
           ))}
@@ -573,7 +574,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
               onClick={() => void handleGenerateGptDict()}
               disabled={generatingGptDict}
             >
-              {generatingGptDict ? '启动中…' : 'AI生成GPT字典'}
+              {generatingGptDict ? t('dictionary.generating') : t('dictionary.generateGpt')}
             </Button>
           ) : null}
         </div>
@@ -581,14 +582,14 @@ export function DictionaryManager(props: DictionaryManagerProps) {
         <div className="dict-layout">
           <aside className="dict-layout__sidebar">
             <div className="dict-layout__sidebar-header">
-              <h3>字典文件</h3>
+              <h3>{t('dictionary.filesTitle')}</h3>
               <button
                 type="button"
                 className={`icon-btn icon-btn--refresh${refreshing ? ' icon-btn--spinning' : ''}`}
                 onClick={() => void handleReload()}
                 disabled={refreshing}
-                title="刷新字典文件列表"
-                aria-label="刷新字典文件列表"
+                title={t('dictionary.refreshFiles')}
+                aria-label={t('dictionary.refreshFiles')}
               >
                 <svg viewBox="0 0 16 16" width="15" height="15" fill="none">
                   <path d="M13.5 8a5.5 5.5 0 11-1.4-3.6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -599,11 +600,11 @@ export function DictionaryManager(props: DictionaryManagerProps) {
             <div className="dict-create-file">
               <input
                 type="text"
-                placeholder="新文件名，如 custom_pre.txt"
+                placeholder={t('dictionary.newFilePlaceholder')}
                 value={newFilename}
                 onChange={(e) => setNewFilename(e.target.value)}
               />
-              <Button onClick={() => void handleCreate()} disabled={creating}>新建</Button>
+              <Button onClick={() => void handleCreate()} disabled={creating}>{t('dictionary.newFile')}</Button>
             </div>
             <div className="dict-file-list">
               {activeFiles.map((file) => {
@@ -621,12 +622,12 @@ export function DictionaryManager(props: DictionaryManagerProps) {
                     }}
                   >
                     <span className="dict-file-item__name">{stripProjectDirMarker(file)}</span>
-                    {content && <span className="dict-file-item__count">{content.count}条</span>}
+                    {content && <span className="dict-file-item__count">{t('dictionary.itemCount', { count: content.count })}</span>}
                   </button>
                 );
               })}
               {activeFiles.length === 0 && (
-                <EmptyState title="当前分类无字典文件" description="请先创建一个字典文件。" />
+                <EmptyState title={t('dictionary.emptyCategoryTitle')} description={t('dictionary.emptyCategoryDescription')} />
               )}
             </div>
           </aside>
@@ -635,21 +636,21 @@ export function DictionaryManager(props: DictionaryManagerProps) {
             {selectedFile ? (
               <Panel
                 title={stripProjectDirMarker(selectedFile)}
-                description={`${selectedContent?.count ?? 0} 条有效条目 · ${selectedContent?.path ?? ''}`}
+                description={t('dictionary.contentDescription', { count: selectedContent?.count ?? 0, path: selectedContent?.path ?? '' })}
                 actions={(
                   <div className="dict-panel-actions">
                     <Button variant="secondary" onClick={() => setMode(mode === 'card' ? 'text' : 'card')}>
-                      {mode === 'card' ? '切换纯文本' : '切换卡片'}
+                      {mode === 'card' ? t('dictionary.switchText') : t('dictionary.switchCards')}
                     </Button>
-                    <Button variant="secondary" onClick={() => void handleDelete()} disabled={deleting}>删除文件</Button>
-                    <Button onClick={() => void handleSave()} disabled={saving || !dirty}>保存</Button>
+                    <Button variant="secondary" onClick={() => void handleDelete()} disabled={deleting}>{t('dictionary.deleteFile')}</Button>
+                    <Button onClick={() => void handleSave()} disabled={saving || !dirty}>{t('common.save')}</Button>
                   </div>
                 )}
               >
                 <div className="dict-toolbar">
                   <input
                     type="text"
-                    placeholder="搜索字典条目…"
+                    placeholder={t('dictionary.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="dict-search"
@@ -657,15 +658,15 @@ export function DictionaryManager(props: DictionaryManagerProps) {
                   {mode === 'card' && (
                     activeTab === 'gpt' ? (
                       <Button variant="secondary" onClick={() => addRow('gpt')}>
-                        + 新增条目
+                        {t('dictionary.addEntry')}
                       </Button>
                     ) : (
                       <>
                         <Button variant="secondary" onClick={() => addRow('normal')}>
-                          + 普通条目
+                          {t('dictionary.addNormalEntry')}
                         </Button>
                         <Button variant="secondary" onClick={() => addRow('conditional')}>
-                          + 条件条目
+                          {t('dictionary.addConditionalEntry')}
                         </Button>
                       </>
                     )
@@ -699,15 +700,15 @@ export function DictionaryManager(props: DictionaryManagerProps) {
                       ))}
                       {groupedRows.length === 0 && (
                         <EmptyState
-                          title={searchTerm.trim() ? '无匹配条目' : '字典为空'}
-                          description={searchTerm.trim() ? '尝试更换搜索关键词或新增条目。' : '点击下方按钮添加第一条字典条目。'}
+                          title={searchTerm.trim() ? t('dictionary.noMatchesTitle') : t('dictionary.emptyTitle')}
+                          description={searchTerm.trim() ? t('dictionary.noMatchesDescription') : t('dictionary.emptyDescription')}
                           action={(
                             activeTab === 'gpt' ? (
-                              <Button variant="secondary" onClick={() => addRow('gpt')}>+ 新增条目</Button>
+                              <Button variant="secondary" onClick={() => addRow('gpt')}>{t('dictionary.addEntry')}</Button>
                             ) : (
                               <div className="dict-empty-actions">
-                                <Button variant="secondary" onClick={() => addRow('normal')}>+ 普通条目</Button>
-                                <Button variant="secondary" onClick={() => addRow('conditional')}>+ 条件条目</Button>
+                                <Button variant="secondary" onClick={() => addRow('normal')}>{t('dictionary.addNormalEntry')}</Button>
+                                <Button variant="secondary" onClick={() => addRow('conditional')}>{t('dictionary.addConditionalEntry')}</Button>
                               </div>
                             )
                           )}
@@ -718,7 +719,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
                 )}
               </Panel>
             ) : (
-              <EmptyState title="选择一个字典文件" description="从左侧选择字典文件开始编辑。" />
+              <EmptyState title={t('dictionary.chooseFileTitle')} description={t('dictionary.chooseFileDescription')} />
             )}
           </div>
         </div>
@@ -740,7 +741,7 @@ export function DictionaryManager(props: DictionaryManagerProps) {
             }}
           >
             <span className="cache-context-menu__icon" aria-hidden="true">📂</span>
-            <span className="cache-context-menu__label">在文件管理器中浏览</span>
+            <span className="cache-context-menu__label">{t('dictionary.browseInFileManager')}</span>
           </button>
         </div>,
         document.body,

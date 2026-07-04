@@ -23,6 +23,7 @@ import {
   fetchProjectDictionaryManager,
 } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 
 const JOB_POLL_INTERVAL_MS = 1500;
 
@@ -127,7 +128,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
       setSourceFile(res.source_file);
       setDirty(false);
     } catch (err) {
-      setError(normalizeError(err, '加载人名表失败'));
+      setError(normalizeError(err, t('names.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -264,7 +265,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
         setGptDictNameMap(new Map());
       }
     } catch (err) {
-      setError(normalizeError(err, '切换 GPT 字典用于人名失败'));
+      setError(normalizeError(err, t('names.errorToggleGpt')));
     } finally {
       setGptToggleBusy(false);
     }
@@ -323,9 +324,9 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
       const finished = await pollJob(job.job_id);
 
       if (finished.status === 'failed') {
-        setError(`生成人名表失败: ${finished.error || '未知错误'}`);
+        setError(t('names.errorGenerateWithDetail', { error: finished.error || t('common.unknownError') }));
       } else if (finished.status === 'cancelled') {
-        setError('生成人名表已被取消');
+        setError(t('names.errorGenerateCancelled'));
       } else {
         const res = await fetchNameTable(projectId);
         let nextNames = res.names;
@@ -343,7 +344,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
         setDirty(nextDirty);
       }
     } catch (err) {
-      setError(normalizeError(err, '生成人名表失败'));
+      setError(normalizeError(err, t('names.errorGenerate')));
     } finally {
       setGenerating(false);
     }
@@ -370,7 +371,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
         setDirty(false);
       }
     } catch (err) {
-      setError(normalizeError(err, '保存人名表失败'));
+      setError(normalizeError(err, t('names.errorSave')));
     } finally {
       setSaving(false);
     }
@@ -394,7 +395,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
   // Open AI translate popover — load profiles & preselect default
   const handleOpenAiPopover = useCallback(() => {
     if (names.filter((n) => n.dst_name.trim() === '').length === 0) {
-      setError('所有人名已翻译，无需AI翻译');
+      setError(t('names.errorAllTranslated'));
       return;
     }
     fetchBackendProfiles()
@@ -420,7 +421,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
         setShowAiPopover(true);
       })
       .catch(() => {
-        setError('加载后端配置失败');
+        setError(t('names.errorLoadBackends'));
       });
   }, [names, projectDir]);
 
@@ -428,7 +429,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
     if (!projectId || aiTranslating) return;
     const untranslated = names.filter((n) => n.dst_name.trim() === '');
     if (untranslated.length === 0) {
-      setError('所有人名已翻译，无需AI翻译');
+      setError(t('names.errorAllTranslated'));
       return;
     }
     setShowAiPopover(false);
@@ -454,11 +455,11 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `请求失败：${response.status}`);
+        throw new Error(errData.error || t('names.errorRequestFailed', { status: response.status }));
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error('无法读取流式响应');
+      if (!reader) throw new Error(t('names.errorStreamUnavailable'));
 
       const decoder = new TextDecoder();
       let sseBuf = '';
@@ -503,7 +504,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                 }
               }
             } else if (eventType === 'error') {
-              setError(data.error || 'AI翻译人名失败');
+              setError(data.error || t('names.errorAiTranslate'));
             } else if (eventType === 'done') {
               aborted = true;
             }
@@ -515,14 +516,14 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
 
       if (filledCount > 0) setDirty(true);
       if (filledCount === 0) {
-        setError('AI未能返回任何翻译结果');
+        setError(t('names.errorAiNoResults'));
       }
     } catch (err) {
       if ((err instanceof DOMException && err.name === 'AbortError') || ((err as Error | null)?.name === 'AbortError')) {
         if (filledCount > 0) setDirty(true);
-        setError('AI翻译人名已取消');
+        setError(t('names.errorAiCancelled'));
       } else {
-        setError(normalizeError(err, 'AI翻译人名失败'));
+        setError(normalizeError(err, t('names.errorAiTranslate')));
       }
     } finally {
       if (aiTranslateAbortRef.current === abortController) {
@@ -594,23 +595,23 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
   if (loading) return <LoadingState />;
 
   const saveLabel = saving
-    ? '保存中…'
+    ? t('names.save.saving')
     : dirty
-      ? '待保存'
-      : '已保存';
+      ? t('names.save.dirty')
+      : t('names.save.saved');
 
   const panelActions = (
     <div className="name-page__panel-actions">
       <input
         type="text"
         className="name-page__search"
-        placeholder="搜索人名..."
+        placeholder={t('names.searchPlaceholder')}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
       <label
         className="name-page__gpt-toggle"
-        title="打开后：自动设置项目配置中的「字典用在name字段(GPT)」，并用项目GPT字典中的条目覆盖未翻译的人名（AI翻译时会自动跳过这些人名）"
+        title={t('names.gptToggleTitle')}
       >
         <span className="toggle-switch">
           <input
@@ -621,27 +622,27 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
           />
           <span className="toggle-switch__slider" />
         </span>
-        <span className="name-page__gpt-toggle-label">GPT字典用于人名</span>
+        <span className="name-page__gpt-toggle-label">{t('names.gptToggleLabel')}</span>
       </label>
       <div className="name-page__panel-actions-group">
       <Button onClick={handleGenerate} disabled={generating} variant="secondary">
-        {generating ? '提取中...' : '提取人名表'}
+        {generating ? t('names.generating') : t('names.generate')}
       </Button>
       <div className="name-page__ai-wrap" ref={aiPopoverRef}>
         <Button
           onClick={aiTranslating ? handleCancelAiTranslate : handleOpenAiPopover}
           disabled={!aiTranslating && names.length === 0}
           variant={aiTranslating ? 'secondary' : 'primary'}
-          title={aiTranslating ? '点击取消当前人名翻译' : undefined}
+          title={aiTranslating ? t('names.cancelAiTitle') : undefined}
         >
-          {aiTranslating ? '翻译中，点击取消' : 'AI翻译人名'}
+          {aiTranslating ? t('names.aiTranslating') : t('names.aiTranslate')}
         </Button>
         {showAiPopover && (
           <div className="name-page__ai-popover">
-            <div className="name-page__ai-popover-title">选择翻译后端</div>
+            <div className="name-page__ai-popover-title">{t('names.chooseBackend')}</div>
             {aiProfileNames.length === 0 ? (
               <div className="name-page__ai-popover-empty">
-                未找到后端配置，请先在「后端配置」页添加 OpenAI 兼容接口
+                {t('names.noBackends')}
               </div>
             ) : (
               <>
@@ -657,7 +658,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                       : aiProfileNames;
                     return sorted.map((name) => {
                       const model = aiProfileModelMap[name];
-                      const suffix = name === def ? '（默认）' : '';
+                      const suffix = name === def ? t('names.defaultSuffix') : '';
                       const label = model ? `${name} - ${model}${suffix}` : `${name}${suffix}`;
                       return <option key={name} value={name}>{label}</option>;
                     });
@@ -668,7 +669,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                   onClick={handleAiTranslate}
                   disabled={!aiSelectedProfile}
                 >
-                  开始翻译
+                  {t('names.startTranslate')}
                 </Button>
               </>
             )}
@@ -680,7 +681,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
         disabled={!dirty || saving}
         variant="primary"
         className={`name-page__save-btn name-page__save-btn--${saving ? 'saving' : dirty ? 'dirty' : 'saved'}`}
-        title={dirty ? '立即保存（编辑 1 秒后会自动保存）' : '已自动保存'}
+        title={dirty ? t('names.saveTitleDirty') : t('names.saveTitleSaved')}
       >
         {saveLabel}
       </Button>
@@ -690,37 +691,37 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
 
   return (
     <div className="page name-page">
-      <PageHeader title="人名翻译" description="用于翻译输入文件中的“name”字段，是直接替换模式。注意正文中的人名应使用“GPT字典”让模型翻译。" />
+      <PageHeader title={t('names.title')} description={t('names.description')} />
 
       {error ? (
         <InlineFeedback
           className="inline-alert--floating"
           tone="error"
-          title="操作失败"
+          title={t('common.operationFailed')}
           description={error}
           onDismiss={() => setError(null)}
         />
       ) : null}
 
-      <Panel title="人名替换表" actions={panelActions}>
+      <Panel title={t('names.panelTitle')} actions={panelActions}>
         <div className="name-page__stats">
           <span className="name-page__stat">
-            共 {names.length} 个人名
+            {t('names.total', { count: names.length })}
           </span>
           <span className="name-page__stat">
-            已翻译 {translatedCount} / {names.length}
+            {t('names.translatedCount', { translated: translatedCount, total: names.length })}
           </span>
           {sourceFile && (
             <span className="name-page__stat">
-              来源: {sourceFile}
+              {t('names.sourceFile', { file: sourceFile })}
             </span>
           )}
         </div>
 
         {names.length === 0 && !generating ? (
           <EmptyState
-            title="尚未生成人名表"
-            description="点击「提取人名表」从当前项目的输入文件中提取所有人名。"
+            title={t('names.emptyTitle')}
+            description={t('names.emptyDescription')}
           />
         ) : (
           <div className="name-page__table-wrap">
@@ -728,9 +729,9 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
               <thead>
                 <tr>
                   <th className="name-page__th name-page__th--index">#</th>
-                  <th className="name-page__th name-page__th--jp">原名</th>
-                  <th className="name-page__th name-page__th--cn">译名</th>
-                  <th className="name-page__th name-page__th--count">次数</th>
+                  <th className="name-page__th name-page__th--jp">{t('names.column.original')}</th>
+                  <th className="name-page__th name-page__th--cn">{t('names.column.translation')}</th>
+                  <th className="name-page__th name-page__th--count">{t('names.column.count')}</th>
                   <th className="name-page__th name-page__th--actions" />
                 </tr>
               </thead>
@@ -766,7 +767,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                           type="text"
                           className="name-page__input"
                           value={entry.dst_name}
-                          placeholder={entry.src_name ? `输入 ${entry.src_name} 的译名...` : ''}
+                          placeholder={entry.src_name ? t('names.translationPlaceholder', { name: entry.src_name }) : ''}
                           onChange={(e) => handleDstNameChange(originalIndex, e.target.value)}
                           onPaste={(e) => handlePaste(e, 'dst_name', originalIndex)}
                         />
@@ -777,7 +778,7 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                           type="button"
                           className="name-page__delete-btn"
                           onClick={() => handleDeleteRow(originalIndex)}
-                          title="删除此行"
+                          title={t('names.deleteRow')}
                         >
                           ✕
                         </button>
@@ -791,8 +792,8 @@ export function ProjectNamePage({ ctx, active = true }: { ctx: ProjectPageContex
                       type="button"
                       className="name-page__add-btn"
                       onClick={handleAddRow}
-                      title="添加人名"
-                      aria-label="添加人名"
+                      title={t('names.addName')}
+                      aria-label={t('names.addName')}
                     >
                       +
                     </button>

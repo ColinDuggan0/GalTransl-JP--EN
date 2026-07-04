@@ -16,6 +16,7 @@ import {
   BACKEND_PROFILES_CHANGE_EVENT,
   DEFAULT_BACKEND_PROFILE_CHANGE_EVENT } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 import {
   ConfigSectionNav,
   CommonSettingsSection,
@@ -70,7 +71,7 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(normalizeError(err, '加载配置失败'));
+        if (!cancelled) setError(normalizeError(err, t('projectConfig.errorLoad')));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -230,7 +231,7 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
       setSaveSuccess(true);
       setDirty(false);
     } catch (err) {
-      setError(normalizeError(err, '保存配置失败'));
+      setError(normalizeError(err, t('projectConfig.errorSave')));
     } finally {
       setSaving(false);
     }
@@ -249,8 +250,8 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
   if (loading) {
     return (
       <div className="project-config-page">
-        <PageHeader className="project-config-page__header" title="配置编辑" />
-        <LoadingState title="加载配置中…" description={`正在读取 ${configFileName}。`} />
+        <PageHeader className="project-config-page__header" title={t('projectConfig.title')} />
+        <LoadingState title={t('projectConfig.loadingTitle')} description={t('projectConfig.loadingDescription', { file: configFileName })} />
       </div>
     );
   }
@@ -258,8 +259,8 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
   if (error && !config) {
     return (
       <div className="project-config-page">
-        <PageHeader className="project-config-page__header" title="配置编辑" />
-        <ErrorState title="加载配置失败" description={error} />
+        <PageHeader className="project-config-page__header" title={t('projectConfig.title')} />
+        <ErrorState title={t('projectConfig.errorLoad')} description={error} />
       </div>
     );
   }
@@ -268,7 +269,7 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
 
   return (
     <div className="project-config-page">
-      <PageHeader className="project-config-page__header" title="配置编辑" description={`可视化编辑项目配置文件 ${configFileName}`} />
+      <PageHeader className="project-config-page__header" title={t('projectConfig.title')} description={t('projectConfig.description', { file: configFileName })} />
 
       <div className="project-config-page__content">
         <ConfigSectionNav
@@ -284,17 +285,17 @@ export function ProjectConfigPage({ ctx }: { ctx: ProjectPageContext }) {
 
         <div className="project-config-page__main" ref={mainRef}>
           {error && (
-            <InlineFeedback tone="error" title="配置保存失败" description={error} />
+            <InlineFeedback tone="error" title={t('projectConfig.saveFailed')} description={error} />
           )}
           {saveSuccess && (
-            <InlineFeedback className="inline-alert--floating" tone="success" title="配置已保存" description="当前项目配置已成功写入磁盘。" onDismiss={() => setSaveSuccess(false)} />
+            <InlineFeedback className="inline-alert--floating" tone="success" title={t('projectConfig.savedTitle')} description={t('projectConfig.savedDescription')} onDismiss={() => setSaveSuccess(false)} />
           )}
 
           <div key={yamlView ? 'yaml' : activeSection} className="section-fade-in">
           {yamlView ? (
-            <Panel title="YAML源码" description="直接编辑YAML配置源码（只读预览，修改请使用上方表单）">
+            <Panel title={t('projectConfig.yamlSource')} description={t('projectConfig.yamlDescription')}>
               <pre className="yaml-preview">
-                {config ? JSON.stringify(config, null, 2) : '无配置数据'}
+                {config ? JSON.stringify(config, null, 2) : t('projectConfig.noConfigData')}
               </pre>
             </Panel>
           ) : (

@@ -13,6 +13,7 @@ import {
   type DictionaryCategory
 } from '../lib/api';
 import { normalizeError } from '../lib/errors';
+import { t } from '../i18n';
 
 const DICT_POLL_INTERVAL_MS = 3000;
 
@@ -64,7 +65,7 @@ export function ProjectDictionaryPage({
       }
     } catch (err) {
       if (!silent) {
-        setError(normalizeError(err, '加载项目字典失败'));
+        setError(normalizeError(err, t('dictionary.project.errorLoad')));
       }
     } finally {
       if (!silent) {
@@ -135,8 +136,8 @@ export function ProjectDictionaryPage({
 
   return (
     <DictionaryManager
-      title="项目字典"
-      description="仅管理项目目录下的字典文件，支持卡片编辑与纯文本编辑。"
+      title={t('dictionary.project.title')}
+      description={t('dictionary.project.description')}
       data={data}
       loading={loading}
       error={error}
@@ -167,7 +168,7 @@ export function ProjectDictionaryPage({
       }}
       onGenerateGptDict={async () => {
         if (!projectId || !projectDir) {
-          throw new Error('项目信息缺失，无法启动任务');
+          throw new Error(t('dictionary.project.errorMissingProject'));
         }
         await submitJob({
           config_file_name: configFileName || 'config.yaml',

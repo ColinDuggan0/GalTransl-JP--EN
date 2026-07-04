@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CustomSelect } from '../../components/CustomSelect';
+import { t } from '../../i18n';
 
 export type FieldValueType = 'number' | 'text' | 'select' | 'textarea' | 'list';
 
@@ -9,6 +10,7 @@ export interface ConfigFieldDef {
   description: string;
   type: FieldValueType;
   options?: string[];
+  optionLabels?: Record<string, string>;
   placeholder?: string;
   rows?: number;
 }
@@ -36,7 +38,7 @@ export function ConfigFieldRow({ field, value, onChange, onListChange, pathPrefi
         onChange={(e) => onChange(fullPath, e.target.value)}
       >
         {field.options?.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
+          <option key={opt} value={opt}>{field.optionLabels?.[opt] ?? opt}</option>
         ))}
       </CustomSelect>
     ) : field.type === 'textarea' ? (
@@ -52,7 +54,7 @@ export function ConfigFieldRow({ field, value, onChange, onListChange, pathPrefi
         id={fieldId}
         rows={field.rows ?? 4}
         value={Array.isArray(value) ? value.join('\n') : (value == null ? '' : String(value))}
-        placeholder={field.placeholder || '每行一个条目'}
+        placeholder={field.placeholder || t('projectConfig.field.multilinePlaceholder')}
         onChange={(e) => {
           if (onListChange) {
             const lines = e.target.value.split('\n').filter((l: string) => l.trim());

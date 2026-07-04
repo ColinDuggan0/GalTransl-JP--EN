@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { t } from '../../i18n';
 
 type LoadingStateProps = {
   title?: string;
@@ -8,7 +9,7 @@ type LoadingStateProps = {
 };
 
 export function LoadingState({
-  title = '加载中…',
+  title = t('common.loading'),
   description,
   action,
   className,

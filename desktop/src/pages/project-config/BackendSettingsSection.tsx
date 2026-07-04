@@ -3,6 +3,7 @@ import { CustomSelect } from '../../components/CustomSelect';
 import { BackendConfigEditor } from '../../components/BackendConfigEditor';
 import { InlineFeedback } from '../../components/page-state';
 import { ProxyConfigEditor } from '../../components/ProxyConfigEditor';
+import { t } from '../../i18n';
 
 interface BackendSettingsSectionProps {
   config: Record<string, unknown> | null;
@@ -32,16 +33,16 @@ export function BackendSettingsSection({
   const autoAdjustWorkers = commonConfig.autoAdjustWorkers === true;
 
   return (
-    <Panel title="翻译后端" description="OpenAI兼容接口、Sakura本地模型和代理配置。">
+    <Panel title={t('projectConfig.backend.title')} description={t('projectConfig.backend.description')}>
       <div className="config-form">
         <label className="field">
-          <span>全局后端配置</span>
+          <span>{t('projectConfig.backend.globalProfile')}</span>
           <CustomSelect
             value={selectedProfile}
             onChange={(e) => onProfileChange(e.target.value)}
           >
-            <option value="__default__">跟随全局默认</option>
-            <option value="">不使用（使用项目自身配置）</option>
+            <option value="__default__">{t('wizard.backend.followDefault')}</option>
+            <option value="">{t('wizard.backend.useProjectConfig')}</option>
             {backendProfileNames.map((name) => (
               <option key={name} value={name}>{name}</option>
             ))}
@@ -49,19 +50,19 @@ export function BackendSettingsSection({
           <span className="field__hint">
             {selectedProfile === '__default__'
               ? defaultProfileName
-                ? `当前默认配置为「${defaultProfileName}」，可在「翻译后端配置」页面修改`
-                : '尚未设置默认配置，请在「翻译后端配置」页面设置'
+                ? t('wizard.backend.defaultConfigured', { name: defaultProfileName })
+                : t('wizard.backend.defaultMissing')
               : selectedProfile
-                ? `翻译时将使用全局配置「${selectedProfile}」覆盖项目后端设置`
-                : '将忽略全局配置，使用项目自身的后端设置'}
+                ? t('wizard.backend.profileSelected', { name: selectedProfile })
+                : t('wizard.backend.projectConfigSelected')}
           </span>
         </label>
 
         {resolvedProfile ? (
           <InlineFeedback
             tone="info"
-            title={`当前使用全局配置：${resolvedProfile}`}
-            description="翻译时将使用该配置覆盖项目后端设置。如需修改配置内容，请前往「翻译后端配置」页面。"
+            title={t('projectConfig.backend.usingGlobalTitle', { name: resolvedProfile })}
+            description={t('projectConfig.backend.usingGlobalDescription')}
           />
         ) : (
           <BackendConfigEditor
@@ -72,7 +73,7 @@ export function BackendSettingsSection({
         )}
 
         <label className="field">
-          <span>自动调节并发 Worker</span>
+          <span>{t('projectConfig.backend.autoAdjustWorkers')}</span>
           <CustomSelect
             value={String(autoAdjustWorkers)}
             onChange={(e) => {
@@ -80,10 +81,10 @@ export function BackendSettingsSection({
               onDirty();
             }}
           >
-            <option value="true">开启</option>
-            <option value="false">关闭</option>
+            <option value="true">{t('projectConfig.option.true')}</option>
+            <option value="false">{t('projectConfig.option.false')}</option>
           </CustomSelect>
-          <span className="field__hint">根据近期 429 比例和响应延迟自动降/升 worker 并发</span>
+          <span className="field__hint">{t('projectConfig.backend.autoAdjustWorkersHint')}</span>
         </label>
 
         <ProxyConfigEditor

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Panel } from '../../components/Panel';
+import { t } from '../../i18n';
 import { fetchProblemTypes, type ProblemTypeInfo } from '../../lib/api';
 
 interface ProblemAnalyzeSectionProps {
@@ -86,23 +87,23 @@ export function ProblemAnalyzeSection({ config, onProblemListChange, onDirty }: 
 
   return (
     <Panel
-      title="问题分析"
-      description="选择启用的翻译质量问题检测项。翻译过程中命中的问题会写入缓存并展示在缓存与问题页。"
+      title={t('projectConfig.problem.title')}
+      description={t('projectConfig.problem.description')}
     >
       <div className="problem-analyze-section">
         {loadError && (
           <div className="problem-analyze-section__error">
-            加载后端支持的问题项失败：{loadError}
+            {t('projectConfig.problem.loadFailed', { error: loadError })}
           </div>
         )}
 
         {problemTypes === null && !loadError ? (
-          <div className="problem-analyze-section__loading">正在加载后端支持的问题项…</div>
+          <div className="problem-analyze-section__loading">{t('projectConfig.problem.loading')}</div>
         ) : (
           <>
             <div className="problem-analyze-section__toolbar">
               <span className="problem-analyze-section__count">
-                已启用 {selectedSet.size} / {(problemTypes?.length ?? 0) + extras.length}
+                {t('projectConfig.problem.enabledCount', { selected: selectedSet.size, total: (problemTypes?.length ?? 0) + extras.length })}
               </span>
               <div className="problem-analyze-section__toolbar-actions">
                 <button
@@ -111,7 +112,7 @@ export function ProblemAnalyzeSection({ config, onProblemListChange, onDirty }: 
                   onClick={selectAll}
                   disabled={!problemTypes || problemTypes.length === 0}
                 >
-                  全选
+                  {t('projectConfig.problem.selectAll')}
                 </button>
                 <button
                   type="button"
@@ -119,7 +120,7 @@ export function ProblemAnalyzeSection({ config, onProblemListChange, onDirty }: 
                   onClick={clearAll}
                   disabled={selectedSet.size === 0}
                 >
-                  清空
+                  {t('projectConfig.problem.clear')}
                 </button>
               </div>
             </div>
@@ -165,7 +166,7 @@ export function ProblemAnalyzeSection({ config, onProblemListChange, onDirty }: 
                     <span className="problem-analyze-section__item-body">
                       <span className="problem-analyze-section__name">{name}</span>
                       <span className="problem-analyze-section__desc problem-analyze-section__desc--warn">
-                        当前后端未声明此问题项，取消勾选将从配置中移除。
+                        {t('projectConfig.problem.unknownTypeHint')}
                       </span>
                     </span>
                   </label>

@@ -1,20 +1,21 @@
 import type { ReactNode } from 'react';
+import { t, type TranslationKey } from '../../i18n';
 
 export type ConfigSectionKey = 'common' | 'backendSpecific' | 'plugin' | 'dictionary' | 'problemAnalyze' | 'retranslKey';
 
 export interface ConfigSectionDef {
   key: ConfigSectionKey;
-  label: string;
+  labelKey: TranslationKey;
   icon: string;
 }
 
 export const CONFIG_SECTIONS: ConfigSectionDef[] = [
-  { key: 'common', label: '通用设置', icon: '⚙️' },
-  { key: 'backendSpecific', label: '翻译后端', icon: '🤖' },
-  { key: 'plugin', label: '插件设置', icon: '🧩' },
-  { key: 'dictionary', label: '字典设置', icon: '📖' },
-  { key: 'problemAnalyze', label: '问题分析', icon: '🔍' },
-  { key: 'retranslKey', label: '重翻关键字', icon: '🔁' },
+  { key: 'common', labelKey: 'projectConfig.nav.common', icon: '⚙️' },
+  { key: 'backendSpecific', labelKey: 'projectConfig.nav.backend', icon: '🤖' },
+  { key: 'plugin', labelKey: 'projectConfig.nav.plugin', icon: '🧩' },
+  { key: 'dictionary', labelKey: 'projectConfig.nav.dictionary', icon: '📖' },
+  { key: 'problemAnalyze', labelKey: 'projectConfig.nav.problemAnalyze', icon: '🔍' },
+  { key: 'retranslKey', labelKey: 'projectConfig.nav.retranslKey', icon: '🔁' },
 ];
 
 interface ConfigSectionNavProps {
@@ -49,7 +50,7 @@ export function ConfigSectionNav({
           onClick={() => { onSectionChange(section.key); }}
         >
           <span>{section.icon}</span>
-          <span>{section.label}</span>
+          <span>{t(section.labelKey)}</span>
         </button>
       ))}
       <button
@@ -59,7 +60,7 @@ export function ConfigSectionNav({
         disabled={saving || disabled}
       >
         <span>💾</span>
-        <span>{saving ? '保存中…' : '保存配置'}{dirty && !saving && <span style={{ color: '#e53e3e', marginLeft: 4 }}>●</span>}</span>
+        <span>{saving ? t('common.saving') : t('common.saveConfig')}{dirty && !saving && <span style={{ color: '#e53e3e', marginLeft: 4 }}>●</span>}</span>
       </button>
       <div className="project-config-page__section-divider" />
       <button
@@ -68,7 +69,7 @@ export function ConfigSectionNav({
         onClick={onYamlToggle}
       >
         <span>📝</span>
-        <span>YAML源码</span>
+        <span>{t('projectConfig.yamlSource')}</span>
       </button>
     </aside>
   );

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { t } from '../../i18n';
 
 type InlineFeedbackTone = 'error' | 'info' | 'success';
 
@@ -140,13 +141,13 @@ export function InlineFeedback({
         <div className="inline-alert__meta">
           <span className="inline-alert__app">GalTransl</span>
           <span className="inline-alert__dot" aria-hidden="true" />
-          <span className="inline-alert__time">刚刚</span>
+          <span className="inline-alert__time">{t('common.justNow')}</span>
         </div>
         {title ? <strong className="page-state-feedback__title">{title}</strong> : null}
         {content ? <div className="page-state-feedback__description">{content}</div> : null}
       </div>
       {action ? <div className="page-state-feedback__action">{action}</div> : null}
-      <button type="button" className="inline-alert__close" aria-label="关闭提示" onClick={startDismiss}>
+      <button type="button" className="inline-alert__close" aria-label={t('common.closeAlert')} onClick={startDismiss}>
         ×
       </button>
     </div>
