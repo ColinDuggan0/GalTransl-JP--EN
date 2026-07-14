@@ -19,6 +19,7 @@ from GalTransl import TRANSLATOR_SUPPORTED, INPUT_FOLDERNAME, OUTPUT_FOLDERNAME,
 from GalTransl.Service import JobSpec, JobState, create_job_state, run_job
 from GalTransl.AppSettings import load_app_settings, save_app_settings
 from GalTransl.DefaultProjectConfig import DEFAULT_PROJECT_CONFIG_YAML
+from GalTransl.ProjectConfigPresets import get_project_config_preset
 from GalTransl.Backend.Prompts import (
     FORGAL_JSON_SYSTEM_PROMPT,
     FORGAL_JSON_TRANS_PROMPT,
@@ -854,6 +855,7 @@ class JobRegistry:
         translator = str(payload.get("translator", "")).strip()
         backend_profile = str(payload.get("backend_profile", "")).strip()
         backend_profile_data = payload.get("backend_profile_data")
+        prompt_template_overrides = payload.get("prompt_template_overrides")
 
         if not project_dir:
             raise ValueError("project_dir is required")
@@ -883,6 +885,7 @@ class JobRegistry:
                 translator=translator,
                 backend_profile=backend_profile,
                 backend_profile_data=backend_profile_data if isinstance(backend_profile_data, dict) else {},
+                prompt_template_overrides=prompt_template_overrides if isinstance(prompt_template_overrides, dict) else {},
             )
             state = create_job_state(spec)
             reset_runtime_project(project_dir)
@@ -2120,7 +2123,16 @@ def build_handler(registry: JobRegistry):
                 self._send_json(load_app_settings())
                 return
             if path == "/api/project-config-template":
-                self._send_json({"content": DEFAULT_PROJECT_CONFIG_YAML})
+                preset_values = parse_qs(parsed.query).get("preset", [])
+                preset_id = preset_values[0].strip() if preset_values else ""
+                if not preset_id:
+                    self._send_json({"content": DEFAULT_PROJECT_CONFIG_YAML})
+                    return
+                preset = get_project_config_preset(preset_id)
+                if preset is None:
+                    self._send_json({"error": f"unknown project config preset: {preset_id}"}, status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json({"content": preset["content"], "preset": preset["id"]})
                 return
             if path == "/api/prompt-templates":
                 self._send_json(_build_prompt_templates_payload())

@@ -8,11 +8,13 @@ import { CustomSelect } from '../components/CustomSelect';
 import { Panel } from '../components/Panel';
 import { PageHeader } from '../components/PageHeader';
 import { InlineFeedback } from '../components/page-state';
-import { t } from '../i18n';
+import { t, type TranslationKey } from '../i18n';
 import {
   BACKEND_PROFILES_CHANGE_EVENT,
   DEFAULT_BACKEND_PROFILE_CHANGE_EVENT,
+  DEFAULT_PROJECT_CONFIG_PRESET_ID,
   type PluginInfo,
+  type ProjectConfigPresetId,
   getDefaultBackendProfile,
   getBackendProfileNames,
   fetchPlugins,
@@ -34,6 +36,30 @@ const STEP_KEYS = [
   'wizard.step.names',
 ] as const;
 const LAST_PARENT_DIR_KEY = 'galtransl-new-project-last-parent-dir';
+const JPEN_GUIDELINE_FILE = 'VN_JP-EN.md';
+const ORIGINAL_GUIDELINE_FILE = 'Basic.md';
+
+const PROJECT_CONFIG_PRESET_DEFAULTS: Record<ProjectConfigPresetId, { language: string; guideline: string }> = {
+  original: { language: 'zh-cn', guideline: ORIGINAL_GUIDELINE_FILE },
+  jpen: { language: 'en', guideline: JPEN_GUIDELINE_FILE },
+};
+
+const PROJECT_CONFIG_PRESET_OPTIONS: Array<{
+  id: ProjectConfigPresetId;
+  labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
+}> = [
+  {
+    id: 'original',
+    labelKey: 'wizard.location.preset.original',
+    descriptionKey: 'wizard.location.preset.originalDescription',
+  },
+  {
+    id: 'jpen',
+    labelKey: 'wizard.location.preset.jpen',
+    descriptionKey: 'wizard.location.preset.jpenDescription',
+  },
+];
 
 type NewProjectWizardProps = {
   onOpenProject: (projectDir: string, config: string) => void;
@@ -56,6 +82,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   });
   const [projectName, setProjectName] = useState('');
   const [projectCreated, setProjectCreated] = useState(false);
+  const [selectedProjectPreset, setSelectedProjectPreset] = useState<ProjectConfigPresetId>(DEFAULT_PROJECT_CONFIG_PRESET_ID);
 
   // Step 2 state
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
@@ -73,9 +100,9 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   const [dynamicNumPerRequest, setDynamicNumPerRequest] = useState(false);
   const [dynamicNumPerRequestMin, setDynamicNumPerRequestMin] = useState(8);
   const [dynamicNumPerRequestMax, setDynamicNumPerRequestMax] = useState(64);
-  const [language, setLanguage] = useState('zh-cn');
+  const [language, setLanguage] = useState(PROJECT_CONFIG_PRESET_DEFAULTS[DEFAULT_PROJECT_CONFIG_PRESET_ID].language);
   const [guidelines, setGuidelines] = useState<string[]>([]);
-  const [translationGuideline, setTranslationGuideline] = useState('');
+  const [translationGuideline, setTranslationGuideline] = useState(PROJECT_CONFIG_PRESET_DEFAULTS[DEFAULT_PROJECT_CONFIG_PRESET_ID].guideline);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Step 5 state
@@ -93,6 +120,11 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     const sep = projectDir.includes('/') ? '/' : '\\';
     return `${projectDir}${sep}gt_input`;
   }, [projectDir]);
+
+  const selectedProjectPresetDescriptionKey = useMemo(() => {
+    return PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === selectedProjectPreset)?.descriptionKey
+      ?? 'wizard.location.preset.jpenDescription';
+  }, [selectedProjectPreset]);
 
   const importPathsToInput = useCallback(
     async (paths: string[]) => {
@@ -181,6 +213,15 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     }
   }, []);
 
+  const handleProjectPresetChange = useCallback((preset: ProjectConfigPresetId) => {
+    const defaults = PROJECT_CONFIG_PRESET_DEFAULTS[preset];
+    setSelectedProjectPreset(preset);
+    setLanguage(defaults.language);
+    setTranslationGuideline(defaults.guideline);
+    setProjectCreated(false);
+    setSettingsSaved(false);
+  }, []);
+
   const handleCreateProject = useCallback(async () => {
     if (!projectDir) {
       setFeedback({ type: 'error', message: t('wizard.feedback.projectInfoRequired') });
@@ -188,7 +229,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     }
     try {
       const sep = projectDir.includes('/') ? '/' : '\\';
-      const configYaml = await fetchDefaultProjectConfigTemplate();
+      const configYaml = await fetchDefaultProjectConfigTemplate(selectedProjectPreset);
       await invoke('create_dir', { path: projectDir });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_input` });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_output` });
@@ -199,7 +240,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     } catch (err) {
       setFeedback({ type: 'error', message: t('wizard.feedback.createFailed', { error: err instanceof Error ? err.message : String(err) }) });
     }
-  }, [projectDir]);
+  }, [projectDir, selectedProjectPreset]);
 
   // ── Step 2: Import files ──
   const handleFileDrop = useCallback(
@@ -302,12 +343,14 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         setGuidelines(list);
         setTranslationGuideline((prev) => {
           if (prev) return prev;
-          if (list.includes('日译中_增强')) return '日译中_增强';
-          return list[0] || '';
+          const presetGuideline = PROJECT_CONFIG_PRESET_DEFAULTS[selectedProjectPreset].guideline;
+          if (list.includes(presetGuideline)) return presetGuideline;
+          if (list.includes(ORIGINAL_GUIDELINE_FILE)) return ORIGINAL_GUIDELINE_FILE;
+          return list[0] || presetGuideline;
         });
       })
       .catch(() => {});
-  }, [currentStep]);
+  }, [currentStep, selectedProjectPreset]);
 
   const handleSaveSettings = useCallback(async () => {
     if (!projectDir) return;
@@ -445,6 +488,22 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   const renderStep1 = () => (
     <Panel title={t('wizard.location.title')} description={t('wizard.location.description')}>
       <div className="wizard-form-grid">
+        <div className="field">
+          <span className="field__label">{t('wizard.location.preset')}</span>
+          <CustomSelect
+            value={selectedProjectPreset}
+            disabled={projectCreated}
+            onChange={(e) => {
+              const nextPreset: ProjectConfigPresetId = e.target.value === 'original' ? 'original' : 'jpen';
+              handleProjectPresetChange(nextPreset);
+            }}
+          >
+            {PROJECT_CONFIG_PRESET_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>{t(option.labelKey)}</option>
+            ))}
+          </CustomSelect>
+          <span className="field__hint">{t(selectedProjectPresetDescriptionKey)}</span>
+        </div>
         <div className="field">
           <span className="field__label">{t('wizard.location.parentDir')}</span>
           <div className="field__row">
