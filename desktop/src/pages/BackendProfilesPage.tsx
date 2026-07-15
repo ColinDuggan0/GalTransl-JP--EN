@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BackendConfigEditor } from '../components/BackendConfigEditor';
 import { Button } from '../components/Button';
+import { CustomSelect } from '../components/CustomSelect';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { EmptyState, InlineFeedback, LoadingState } from '../components/page-state';
 import { ProxyConfigEditor } from '../components/ProxyConfigEditor';
+import {
+  BACKEND_PROFILE_PRESETS,
+  cloneBackendProfilePresetProfile,
+  getBackendProfilePreset,
+  type BackendProfilePresetId,
+} from '../lib/backendProfilePresets';
 import {
   createBackendProfile,
   deleteBackendProfile,
@@ -79,7 +86,10 @@ export function BackendProfilesPage() {
   // New-profile dialog state
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileNameEdited, setNewProfileNameEdited] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<BackendProfilePresetId>('blank');
   const [creating, setCreating] = useState(false);
+  const selectedPreset = useMemo(() => getBackendProfilePreset(selectedPresetId), [selectedPresetId]);
 
   const loadProfiles = useCallback(async () => {
     setLoading(true);
@@ -103,6 +113,8 @@ export function BackendProfilesPage() {
 
   const openNewDialog = useCallback(() => {
     setNewProfileName('');
+    setNewProfileNameEdited(false);
+    setSelectedPresetId('blank');
     setShowNewDialog(true);
     setError(null);
     setSaveSuccess(false);
@@ -112,7 +124,17 @@ export function BackendProfilesPage() {
     if (creating) return;
     setShowNewDialog(false);
     setNewProfileName('');
+    setNewProfileNameEdited(false);
+    setSelectedPresetId('blank');
   }, [creating]);
+
+  const handlePresetChange = useCallback((presetId: string) => {
+    const nextPreset = getBackendProfilePreset(presetId as BackendProfilePresetId);
+    setSelectedPresetId(nextPreset.id);
+    if (!newProfileNameEdited) {
+      setNewProfileName(nextPreset.suggestedProfileName);
+    }
+  }, [newProfileNameEdited]);
 
   const handleCreate = useCallback(async () => {
     const name = newProfileName.trim();
@@ -127,11 +149,13 @@ export function BackendProfilesPage() {
     setCreating(true);
     setError(null);
     try {
-      const newConfig = JSON.parse(JSON.stringify(DEFAULT_BACKEND_CONFIG));
+      const newConfig = cloneBackendProfilePresetProfile(selectedPreset);
       await createBackendProfile(name, newConfig);
       setSaveSuccess(true);
       setShowNewDialog(false);
       setNewProfileName('');
+      setNewProfileNameEdited(false);
+      setSelectedPresetId('blank');
       await loadProfiles();
       // Immediately open the edit dialog for the new profile
       setEditingName(name);
@@ -142,7 +166,7 @@ export function BackendProfilesPage() {
     } finally {
       setCreating(false);
     }
-  }, [newProfileName, profiles, loadProfiles]);
+  }, [newProfileName, profiles, loadProfiles, selectedPreset]);
 
   const handleEdit = useCallback((entry: ProfileEntry) => {
     setIsEditing(true);
@@ -363,11 +387,32 @@ export function BackendProfilesPage() {
               {t('backendProfiles.newTitle')}
             </h3>
             <label className="field">
+              <span>{t('backendProfiles.presetLabel')}</span>
+              <CustomSelect
+                value={selectedPresetId}
+                onChange={(e) => handlePresetChange(e.target.value)}
+                disabled={creating}
+              >
+                {BACKEND_PROFILE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {t(preset.labelKey)}
+                  </option>
+                ))}
+              </CustomSelect>
+              <span className="field__hint">{t('backendProfiles.presetHint')}</span>
+            </label>
+            <div className="backend-preset-description">
+              {t(selectedPreset.descriptionKey)}
+            </div>
+            <label className="field">
               <span>{t('backendProfiles.nameLabel')}</span>
               <input
                 type="text"
                 value={newProfileName}
-                onChange={(e) => setNewProfileName(e.target.value)}
+                onChange={(e) => {
+                  setNewProfileName(e.target.value);
+                  setNewProfileNameEdited(true);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); void handleCreate(); }
                   else if (e.key === 'Escape') { e.preventDefault(); closeNewDialog(); }
