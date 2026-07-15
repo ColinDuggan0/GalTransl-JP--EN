@@ -229,6 +229,8 @@ export const zhCN: Record<TranslationKey, string> = {
   'wizard.location.preset.originalDescription': '保留原版 GalTransl 日译中项目默认配置。',
   'wizard.location.preset.jpen': '日译英视觉小说本地化',
   'wizard.location.preset.jpenDescription': '此分支默认选项。使用英文输出、日译英 VN 翻译规范和仅项目内字典。',
+  'wizard.location.presetMetadataLoadingTitle': '项目预设暂不可用',
+  'wizard.location.presetMetadataLoadingDescription': '当前预设信息尚不可用，将尽量使用日译英视觉小说预设。',
   'wizard.import.title': '导入文件',
   'wizard.import.description': '将待翻译的文件导入到项目的 gt_input 目录中，也可以跳过此步骤稍后手动添加。',
   'wizard.import.drop': '拖放文件到此处导入',

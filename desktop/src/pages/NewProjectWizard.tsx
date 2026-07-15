@@ -62,6 +62,22 @@ const PROJECT_CONFIG_PRESET_OPTIONS: Array<{
   },
 ];
 
+const FALLBACK_PROJECT_PRESET_ID: ProjectConfigPresetId =
+  PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === DEFAULT_PROJECT_CONFIG_PRESET_ID)?.id
+  ?? PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === 'jpen')?.id
+  ?? PROJECT_CONFIG_PRESET_OPTIONS[0]?.id
+  ?? 'jpen';
+
+function resolveProjectPresetId(preset: string | null | undefined): ProjectConfigPresetId {
+  const knownPreset = PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === preset);
+  return knownPreset?.id ?? FALLBACK_PROJECT_PRESET_ID;
+}
+
+function getProjectPresetDefaults(preset: string | null | undefined) {
+  const resolvedPreset = resolveProjectPresetId(preset);
+  return PROJECT_CONFIG_PRESET_DEFAULTS[resolvedPreset] ?? PROJECT_CONFIG_PRESET_DEFAULTS.jpen;
+}
+
 type NewProjectWizardProps = {
   onOpenProject: (projectDir: string, config: string) => void;
 };
@@ -118,7 +134,9 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   });
   const [projectName, setProjectName] = useState('');
   const [projectCreated, setProjectCreated] = useState(false);
-  const [selectedProjectPreset, setSelectedProjectPreset] = useState<ProjectConfigPresetId>(DEFAULT_PROJECT_CONFIG_PRESET_ID);
+  const [selectedProjectPreset, setSelectedProjectPreset] = useState<ProjectConfigPresetId>(
+    () => resolveProjectPresetId(DEFAULT_PROJECT_CONFIG_PRESET_ID),
+  );
 
   // Step 2 state
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
@@ -136,9 +154,9 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   const [dynamicNumPerRequest, setDynamicNumPerRequest] = useState(false);
   const [dynamicNumPerRequestMin, setDynamicNumPerRequestMin] = useState(8);
   const [dynamicNumPerRequestMax, setDynamicNumPerRequestMax] = useState(64);
-  const [language, setLanguage] = useState(PROJECT_CONFIG_PRESET_DEFAULTS[DEFAULT_PROJECT_CONFIG_PRESET_ID].language);
+  const [language, setLanguage] = useState(getProjectPresetDefaults(DEFAULT_PROJECT_CONFIG_PRESET_ID).language);
   const [guidelines, setGuidelines] = useState<string[]>([]);
-  const [translationGuideline, setTranslationGuideline] = useState(PROJECT_CONFIG_PRESET_DEFAULTS[DEFAULT_PROJECT_CONFIG_PRESET_ID].guideline);
+  const [translationGuideline, setTranslationGuideline] = useState(getProjectPresetDefaults(DEFAULT_PROJECT_CONFIG_PRESET_ID).guideline);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Step 5 state
@@ -157,9 +175,22 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     return `${projectDir}${sep}gt_input`;
   }, [projectDir]);
 
+  const selectedProjectPresetOption = useMemo(() => {
+    return PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === selectedProjectPreset);
+  }, [selectedProjectPreset]);
+
   const selectedProjectPresetDescriptionKey = useMemo(() => {
-    return PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === selectedProjectPreset)?.descriptionKey
+    return selectedProjectPresetOption?.descriptionKey
+      ?? PROJECT_CONFIG_PRESET_OPTIONS.find((option) => option.id === FALLBACK_PROJECT_PRESET_ID)?.descriptionKey
       ?? 'wizard.location.preset.jpenDescription';
+  }, [selectedProjectPresetOption]);
+
+  const isPresetMetadataMissing = !selectedProjectPresetOption;
+
+  useEffect(() => {
+    const resolvedPreset = resolveProjectPresetId(selectedProjectPreset);
+    if (resolvedPreset === selectedProjectPreset) return;
+    setSelectedProjectPreset(resolvedPreset);
   }, [selectedProjectPreset]);
 
   const importPathsToInput = useCallback(
@@ -205,27 +236,37 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   );
 
   useEffect(() => {
-    const currentWindow = getCurrentWebviewWindow();
+    let currentWindow: ReturnType<typeof getCurrentWebviewWindow>;
+    try {
+      currentWindow = getCurrentWebviewWindow();
+    } catch {
+      return;
+    }
     let disposed = false;
 
-    const unlistenPromise = currentWindow.onDragDropEvent((event: unknown) => {
-      if (currentStep !== 1) return;
-      const payload = (event as { payload?: { type?: string; paths?: string[] } })?.payload;
-      if (payload?.type !== 'drop') return;
-      const paths = Array.isArray(payload.paths) ? payload.paths : [];
-      if (paths.length === 0) {
-        setFeedback({ type: 'error', message: t('wizard.feedback.dropPathMissing') });
-        return;
-      }
-      void importPathsToInput(paths);
-    });
+    let unlistenPromise: Promise<() => void>;
+    try {
+      unlistenPromise = currentWindow.onDragDropEvent((event: unknown) => {
+        if (currentStep !== 1) return;
+        const payload = (event as { payload?: { type?: string; paths?: string[] } })?.payload;
+        if (payload?.type !== 'drop') return;
+        const paths = Array.isArray(payload.paths) ? payload.paths : [];
+        if (paths.length === 0) {
+          setFeedback({ type: 'error', message: t('wizard.feedback.dropPathMissing') });
+          return;
+        }
+        void importPathsToInput(paths);
+      });
+    } catch {
+      return;
+    }
 
     return () => {
       disposed = true;
       void unlistenPromise.then((unlisten) => {
         if (!disposed) return;
         unlisten();
-      });
+      }).catch(() => {});
     };
   }, [currentStep, importPathsToInput]);
 
@@ -249,9 +290,10 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     }
   }, []);
 
-  const handleProjectPresetChange = useCallback((preset: ProjectConfigPresetId) => {
-    const defaults = PROJECT_CONFIG_PRESET_DEFAULTS[preset];
-    setSelectedProjectPreset(preset);
+  const handleProjectPresetChange = useCallback((preset: string) => {
+    const nextPreset = resolveProjectPresetId(preset);
+    const defaults = getProjectPresetDefaults(nextPreset);
+    setSelectedProjectPreset(nextPreset);
     setLanguage(defaults.language);
     setTranslationGuideline(defaults.guideline);
     setProjectCreated(false);
@@ -265,14 +307,15 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     }
     try {
       const sep = projectDir.includes('/') ? '/' : '\\';
-      const template = await fetchProjectConfigTemplate(selectedProjectPreset);
+      const effectiveProjectPreset = resolveProjectPresetId(selectedProjectPreset);
+      const template = await fetchProjectConfigTemplate(effectiveProjectPreset);
       await invoke('create_dir', { path: projectDir });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_input` });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_output` });
       await invoke('create_dir', { path: `${projectDir}${sep}transl_cache` });
       await invoke('write_text_file', { path: `${projectDir}${sep}config.yaml`, content: template.content });
 
-      const starterFiles = selectedProjectPreset === 'jpen' ? template.starter_files ?? [] : [];
+      const starterFiles = effectiveProjectPreset === 'jpen' ? template.starter_files ?? [] : [];
       const starterResult = await createStarterFiles(projectDir, sep, starterFiles);
 
       setProjectCreated(true);
@@ -388,7 +431,7 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
         setGuidelines(list);
         setTranslationGuideline((prev) => {
           if (prev) return prev;
-          const presetGuideline = PROJECT_CONFIG_PRESET_DEFAULTS[selectedProjectPreset].guideline;
+          const presetGuideline = getProjectPresetDefaults(selectedProjectPreset).guideline;
           if (list.includes(presetGuideline)) return presetGuideline;
           if (list.includes(ORIGINAL_GUIDELINE_FILE)) return ORIGINAL_GUIDELINE_FILE;
           return list[0] || presetGuideline;
@@ -548,6 +591,13 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
             ))}
           </CustomSelect>
           <span className="field__hint">{t(selectedProjectPresetDescriptionKey)}</span>
+          {isPresetMetadataMissing && (
+            <InlineFeedback
+              tone="info"
+              title={t('wizard.location.presetMetadataLoadingTitle')}
+              description={t('wizard.location.presetMetadataLoadingDescription')}
+            />
+          )}
         </div>
         <div className="field">
           <span className="field__label">{t('wizard.location.parentDir')}</span>

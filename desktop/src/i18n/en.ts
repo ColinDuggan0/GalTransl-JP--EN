@@ -227,6 +227,8 @@ export const en = {
   'wizard.location.preset.originalDescription': 'Preserves the original Japanese-to-Chinese GalTransl project defaults.',
   'wizard.location.preset.jpen': 'JP->EN Visual Novel Localization',
   'wizard.location.preset.jpenDescription': 'Default for this fork. Uses English output, a JP->EN VN guideline, and project-only dictionaries.',
+  'wizard.location.presetMetadataLoadingTitle': 'Project preset unavailable',
+  'wizard.location.presetMetadataLoadingDescription': 'The selected preset metadata is not available yet. Using the JP->EN Visual Novel preset when possible.',
   'wizard.import.title': 'Import Files',
   'wizard.import.description': 'Import files to the project gt_input folder, or skip this step and add files manually later.',
   'wizard.import.drop': 'Drop files here to import',
