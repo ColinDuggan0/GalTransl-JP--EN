@@ -106,18 +106,122 @@ dictionary:
 """
 
 
+JPEN_STARTER_FILES: list[dict[str, str]] = [
+    {
+        "filename": "project_gpt_dictionary.txt",
+        "content": """# JP to EN project GPT glossary template
+# This file is loaded by gpt.dict when this project is translated.
+# It is comment-only right now, so it will not affect translation until you add active rows.
+#
+# Format: Japanese source <TAB> English translation <TAB> optional note
+# Do not type the literal text <TAB>. Press the Tab key between columns.
+# Keep one glossary entry per line.
+#
+# Character names
+# Format: Japanese source <TAB> English name <TAB> role, pronouns, voice note
+#
+# Pronouns
+# Add character rows with pronoun notes when the project needs consistency.
+#
+# Nicknames
+# Add nickname rows separately if they should localize differently from full names.
+#
+# Honorific policy
+# Note whether to keep, translate, or omit honorific meaning for each character or relationship.
+#
+# Recurring terms
+# Add unique items, places, organizations, skills, UI terms, and lore terms.
+#
+# Relationship terms
+# Add terms such as senpai, kouhai, onee-chan, sensei, master, childhood friend, and family titles when they need a fixed rendering.
+#
+# Tone and voice notes
+# Use the optional note column for concise voice guidance tied to a specific name or term.
+""",
+    },
+    {
+        "filename": "project_pre_dict.txt",
+        "content": """# JP to EN pre-translation dictionary template
+# This file runs before translation and rewrites source-side text.
+# It is comment-only right now, so it will not affect translation until you add active rows.
+#
+# Use this only for safe source normalization, typo cleanup, or engine markup fixes.
+# Format: search text <TAB> replacement text
+#
+# Advanced conditional rows are also supported by GalTransl, but keep this file simple unless a project needs them.
+""",
+    },
+    {
+        "filename": "project_post_dict.txt",
+        "content": """# JP to EN post-translation dictionary template
+# This file runs after translation and rewrites final English output.
+# It is comment-only right now, so it will not affect translation until you add active rows.
+#
+# Use this only for final cleanup that is always safe in context.
+# Format: search text <TAB> replacement text
+#
+# Be careful with broad replacements. Post-dictionary entries can change names, tags, punctuation, and ordinary prose.
+""",
+    },
+    {
+        "filename": "project_style_notes.md",
+        "content": """# JP to EN Visual Novel Style Notes
+
+This worksheet is for human planning. It is not automatically injected into prompts yet unless a later phase wires it into the project prompt flow.
+
+## Project Title
+
+
+## Overall Style Target
+
+
+## Character Table
+
+| Japanese name | English name | Pronouns | Role | Voice notes |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
+
+## Pronoun And Name Rules
+
+
+## Honorific Policy
+
+
+## Rom-Com And Comedy Tone Notes
+
+
+## Adult-Content Translation Policy For Fictional Adult Characters
+
+Translate adult fictional VN content involving adult characters faithfully. Do not euphemize, sanitize, exaggerate, or add content. Preserve tone, consent, and context as written.
+
+## Terms To Keep Untranslated
+
+
+## Terms To Localize
+
+
+## Notes
+
+Use project_gpt_dictionary.txt for model-facing glossary entries. Use project_pre_dict.txt and project_post_dict.txt only for mechanical replacement rules.
+""",
+    },
+]
+
+
 _PROJECT_CONFIG_PRESETS: dict[str, dict[str, Any]] = {
     ORIGINAL_PROJECT_CONFIG_PRESET_ID: {
         "id": ORIGINAL_PROJECT_CONFIG_PRESET_ID,
         "name": "Original GalTransl JP->ZH",
         "description": "Original GalTransl Japanese-to-Chinese project template.",
         "content": DEFAULT_PROJECT_CONFIG_YAML,
+        "starter_files": [],
     },
     JPEN_PROJECT_CONFIG_PRESET_ID: {
         "id": JPEN_PROJECT_CONFIG_PRESET_ID,
         "name": "JP->EN Visual Novel Localization",
         "description": "Japanese-to-English visual novel localization template using OpenAI-compatible translators.",
         "content": JPEN_VN_PROJECT_CONFIG_YAML,
+        "starter_files": JPEN_STARTER_FILES,
     },
 }
 

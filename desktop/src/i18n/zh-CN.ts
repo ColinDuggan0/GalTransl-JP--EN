@@ -204,6 +204,7 @@ export const zhCN: Record<TranslationKey, string> = {
   'wizard.feedback.dropPathMissing': '未能读取拖拽文件路径，请改用“选择文件”导入。',
   'wizard.feedback.projectInfoRequired': '请选择目录并输入项目名称',
   'wizard.feedback.projectCreated': '项目创建成功！',
+  'wizard.feedback.projectCreatedStarterWarning': '项目已创建，但部分启动模板文件创建失败：{files}。可以稍后在项目文件夹中手动添加。',
   'wizard.feedback.createFailed': '创建失败: {error}',
   'wizard.feedback.openInputFailed': '打开输入文件夹失败: {error}',
   'wizard.feedback.settingsSaved': '设置已保存',

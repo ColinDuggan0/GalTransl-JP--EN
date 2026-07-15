@@ -16,6 +16,11 @@ export type ProjectConfigPresetId = 'original' | 'jpen';
 
 export const DEFAULT_PROJECT_CONFIG_PRESET_ID: ProjectConfigPresetId = 'jpen';
 
+export type ProjectStarterFile = {
+  filename: string;
+  content: string;
+};
+
 export type Job = {
   config_file_name: string;
   created_at: string;
@@ -60,6 +65,7 @@ type ErrorResponse = {
 type ProjectConfigTemplateResponse = {
   content: string;
   preset?: string;
+  starter_files?: ProjectStarterFile[];
 };
 
 // ---- Project API types ----
@@ -768,11 +774,15 @@ export async function fetchAppSettings() {
   return apiRequest<AppSettings>('/api/app-settings');
 }
 
-export async function fetchDefaultProjectConfigTemplate(preset?: ProjectConfigPresetId | string) {
+export async function fetchProjectConfigTemplate(preset?: ProjectConfigPresetId | string) {
   const path = preset
     ? `/api/project-config-template?preset=${encodeURIComponent(preset)}`
     : '/api/project-config-template';
-  const response = await apiRequest<ProjectConfigTemplateResponse>(path);
+  return apiRequest<ProjectConfigTemplateResponse>(path);
+}
+
+export async function fetchDefaultProjectConfigTemplate(preset?: ProjectConfigPresetId | string) {
+  const response = await fetchProjectConfigTemplate(preset);
   return response.content;
 }
 

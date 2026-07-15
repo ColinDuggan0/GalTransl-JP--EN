@@ -403,6 +403,31 @@ fn write_text_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn write_text_file_if_missing(path: String, content: String) -> Result<bool, String> {
+    let target = std::path::Path::new(&path);
+    if let Some(parent) = target.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
+        }
+    }
+
+    match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(target)
+    {
+        Ok(mut file) => {
+            use std::io::Write;
+            file.write_all(content.as_bytes())
+                .map_err(|e| format!("写入文件失败: {}", e))?;
+            Ok(true)
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
+        Err(err) => Err(format!("写入文件失败: {}", err)),
+    }
+}
+
+#[tauri::command]
 fn copy_files(sources: Vec<String>, destination_dir: String) -> Result<(), String> {
     std::fs::create_dir_all(&destination_dir).map_err(|e| format!("创建目录失败: {}", e))?;
     for src in &sources {
@@ -427,6 +452,7 @@ fn main() {
             reveal_file,
             create_dir,
             write_text_file,
+            write_text_file_if_missing,
             copy_files,
         ])
         .on_window_event(|_window, event| {

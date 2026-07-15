@@ -15,10 +15,11 @@ import {
   DEFAULT_PROJECT_CONFIG_PRESET_ID,
   type PluginInfo,
   type ProjectConfigPresetId,
+  type ProjectStarterFile,
   getDefaultBackendProfile,
   getBackendProfileNames,
   fetchPlugins,
-  fetchDefaultProjectConfigTemplate,
+  fetchProjectConfigTemplate,
   fetchProjectConfig,
   fetchTranslationGuidelines,
   updateProjectConfig,
@@ -64,6 +65,41 @@ const PROJECT_CONFIG_PRESET_OPTIONS: Array<{
 type NewProjectWizardProps = {
   onOpenProject: (projectDir: string, config: string) => void;
 };
+
+type StarterFileCreationResult = {
+  failed: string[];
+};
+
+function isSafeStarterFilename(filename: string) {
+  const trimmed = filename.trim();
+  return trimmed.length > 0
+    && trimmed === filename
+    && !trimmed.includes('..')
+    && !/[\\/:*?"<>|]/.test(trimmed);
+}
+
+async function createStarterFiles(projectDir: string, sep: string, starterFiles: ProjectStarterFile[]): Promise<StarterFileCreationResult> {
+  const failed: string[] = [];
+
+  for (const starterFile of starterFiles) {
+    const filename = starterFile.filename.trim();
+    if (!isSafeStarterFilename(starterFile.filename)) {
+      failed.push(starterFile.filename || '(invalid filename)');
+      continue;
+    }
+
+    try {
+      await invoke<boolean>('write_text_file_if_missing', {
+        path: `${projectDir}${sep}${filename}`,
+        content: starterFile.content ?? '',
+      });
+    } catch {
+      failed.push(filename);
+    }
+  }
+
+  return { failed };
+}
 
 export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
   const navigate = useNavigate();
@@ -229,14 +265,23 @@ export function NewProjectWizard({ onOpenProject }: NewProjectWizardProps) {
     }
     try {
       const sep = projectDir.includes('/') ? '/' : '\\';
-      const configYaml = await fetchDefaultProjectConfigTemplate(selectedProjectPreset);
+      const template = await fetchProjectConfigTemplate(selectedProjectPreset);
       await invoke('create_dir', { path: projectDir });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_input` });
       await invoke('create_dir', { path: `${projectDir}${sep}gt_output` });
       await invoke('create_dir', { path: `${projectDir}${sep}transl_cache` });
-      await invoke('write_text_file', { path: `${projectDir}${sep}config.yaml`, content: configYaml });
+      await invoke('write_text_file', { path: `${projectDir}${sep}config.yaml`, content: template.content });
+
+      const starterFiles = selectedProjectPreset === 'jpen' ? template.starter_files ?? [] : [];
+      const starterResult = await createStarterFiles(projectDir, sep, starterFiles);
+
       setProjectCreated(true);
-      setFeedback({ type: 'success', message: t('wizard.feedback.projectCreated') });
+      setFeedback(starterResult.failed.length > 0
+        ? {
+          type: 'info',
+          message: t('wizard.feedback.projectCreatedStarterWarning', { files: starterResult.failed.join(', ') }),
+        }
+        : { type: 'success', message: t('wizard.feedback.projectCreated') });
     } catch (err) {
       setFeedback({ type: 'error', message: t('wizard.feedback.createFailed', { error: err instanceof Error ? err.message : String(err) }) });
     }

@@ -2132,7 +2132,7 @@ def build_handler(registry: JobRegistry):
                 if preset is None:
                     self._send_json({"error": f"unknown project config preset: {preset_id}"}, status=HTTPStatus.BAD_REQUEST)
                     return
-                self._send_json({"content": preset["content"], "preset": preset["id"]})
+                self._send_json({"content": preset["content"], "preset": preset["id"], "starter_files": preset.get("starter_files", [])})
                 return
             if path == "/api/prompt-templates":
                 self._send_json(_build_prompt_templates_payload())

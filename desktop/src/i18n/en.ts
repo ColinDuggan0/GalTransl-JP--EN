@@ -202,6 +202,7 @@ export const en = {
   'wizard.feedback.dropPathMissing': 'Could not read dropped file paths. Use "Choose Files" instead.',
   'wizard.feedback.projectInfoRequired': 'Choose a parent folder and enter a project name.',
   'wizard.feedback.projectCreated': 'Project created.',
+  'wizard.feedback.projectCreatedStarterWarning': 'Project created, but some starter files could not be created: {files}. You can add them later from the project folder.',
   'wizard.feedback.createFailed': 'Create failed: {error}',
   'wizard.feedback.openInputFailed': 'Failed to open input folder: {error}',
   'wizard.feedback.settingsSaved': 'Settings saved.',
